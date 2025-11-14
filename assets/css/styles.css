@@ -1,8 +1,0 @@
-/* assets/css/styles.css */
-/* Añade estilos mínimos para que se vea agradable en móviles */
-body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-}
-.card-title {
-  font-weight: 600;
-}

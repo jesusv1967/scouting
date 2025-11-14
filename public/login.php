@@ -1,14 +1,11 @@
 <?php
 // public/login.php
-require_once __DIR__ . '/../src/config.php';
-$config = require __DIR__ . '/../src/config.php';
-require_once __DIR__ . '/../src/helpers.php';
+// Login sin barra de navegación (solo el formulario centrado).
+require_once __DIR__ . '/../src/bootstrap.php';
 require_once __DIR__ . '/../src/auth.php';
 
-secure_session_start($config);
-
 if (is_logged_in()) {
-    header('Location: /dashboard.php');
+    header('Location: ' . url('dashboard.php'));
     exit;
 }
 
@@ -23,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($username === '' || $password === '') {
             $error = 'Rellena usuario y contraseña';
         } elseif (login_user($username, $password)) {
-            header('Location: dashboard.php');
+            header('Location: ' . url('dashboard.php'));
             exit;
         } else {
             $error = 'Usuario o contraseña incorrectos';
@@ -39,19 +36,26 @@ $csrf = csrf_token();
   <title>Login - Scouting</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="<?=htmlspecialchars(url_asset('css/styles.css'))?>">
 </head>
 <body class="bg-light">
   <div class="container py-5">
     <div class="row justify-content-center">
       <div class="col-12 col-sm-8 col-md-6 col-lg-5">
-        <div class="card shadow-sm">
+        <div class="card shadow-sm login-card">
           <div class="card-body">
-            <h4 class="card-title mb-3">Iniciar sesión</h4>
+            <div class="login-illustration mb-3 text-center">
+              <img src="<?=htmlspecialchars(url_asset('img/logo.svg'))?>" alt="Logo" style="height:72px">
+            </div>
+
+            <h4 class="card-title mb-3 text-center">Iniciar sesión</h4>
+
             <?php if ($error): ?>
               <div class="alert alert-danger"><?=htmlspecialchars($error)?></div>
             <?php endif; ?>
-            <form method="post" class="mb-0">
+
+            <form method="post" class="mb-0" action="<?=htmlspecialchars(url('login.php'))?>">
               <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
               <div class="mb-3">
                 <label class="form-label">Usuario</label>
@@ -65,12 +69,15 @@ $csrf = csrf_token();
                 <button class="btn btn-primary">Entrar</button>
               </div>
             </form>
+
             <hr>
-            <small class="text-muted">App MVP — versión inicial</small>
+            <div class="text-center text-muted-sm">App MVP — versión inicial</div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

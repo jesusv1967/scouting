@@ -1,8 +1,8 @@
 <?php
 // src/helpers.php
-session_start();
+// Helpers varios: sesión segura, CSRF, flash messages, login check.
+// NOTA: ya no arrancamos session_start() inmediatamente aquí; use secure_session_start().
 
-// Sesión segura básica
 function secure_session_start($config = []) {
     $secure = $config['session_cookie_secure'] ?? false;
     $httponly = true;
@@ -27,7 +27,7 @@ function is_logged_in() {
 
 function require_login() {
     if (!is_logged_in()) {
-        header('Location: /login.php');
+        header('Location: ' . (function_exists('url') ? url('login.php') : '/login.php'));
         exit;
     }
 }
