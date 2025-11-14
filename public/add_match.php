@@ -1,5 +1,5 @@
 <?php
-// public/add_match.php
+// public/add_match.php (responsive)
 require_once __DIR__ . '/../src/db.php';
 
 // Manejo de POST para crear equipos si no existen y el partido
@@ -57,34 +57,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!doctype html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Crear partido</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
 </head>
-<body class="container py-4">
-  <h1>Crear partido</h1>
-  <?php if (!empty($error)): ?><div class="alert alert-danger"><?=htmlspecialchars($error)?></div><?php endif; ?>
-  <form method="post">
-    <div class="mb-3">
-      <label class="form-label">Fecha y hora</label>
-      <input type="datetime-local" name="match_date" class="form-control" required>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.php">Scouting</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Equipo local (nombre)</label>
-      <input type="text" name="home_team" class="form-control" required>
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Equipo visitante (nombre)</label>
-      <input type="text" name="away_team" class="form-control" required>
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Ubicación</label>
-      <input type="text" name="location" class="form-control">
-    </div>
-    <button class="btn btn-primary">Crear</button>
-    <a class="btn btn-secondary" href="index.php">Volver</a>
-  </form>
+  </nav>
+
+  <main class="container my-4">
+    <h1 class="h5">Crear partido</h1>
+    <?php if (!empty($error)): ?><div class="alert alert-danger"><?=htmlspecialchars($error)?></div><?php endif; ?>
+    <form method="post" class="needs-validation" novalidate>
+      <div class="mb-3">
+        <label class="form-label">Fecha y hora</label>
+        <input type="datetime-local" name="match_date" class="form-control form-control-lg" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Equipo local (nombre)</label>
+        <input type="text" name="home_team" class="form-control form-control-lg" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Equipo visitante (nombre)</label>
+        <input type="text" name="away_team" class="form-control form-control-lg" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Ubicación</label>
+        <input type="text" name="location" class="form-control form-control-lg">
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-lg">Crear</button>
+        <a class="btn btn-secondary btn-lg" href="index.php">Volver</a>
+      </div>
+    </form>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

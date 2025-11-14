@@ -1,5 +1,5 @@
 <?php
-// public/view_match.php
+// public/view_match.php (responsive)
 require_once __DIR__ . '/../src/db.php';
 
 $match_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -63,67 +63,82 @@ $stmt->execute();
 $notes = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!doctype html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ver partido</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
 </head>
-<body class="container py-4">
-  <h1>Partido: <?=htmlspecialchars($match['home'])?> vs <?=htmlspecialchars($match['away'])?></h1>
-  <p>Fecha: <?=htmlspecialchars($match['match_date'])?> | Lugar: <?=htmlspecialchars($match['location'])?></p>
-  <a class="btn btn-secondary mb-3" href="index.php">Volver al listado</a>
-
-  <h3>Añadir nota</h3>
-  <?php if (!empty($note_error)): ?><div class="alert alert-danger"><?=htmlspecialchars($note_error)?></div><?php endif; ?>
-  <form method="post" class="mb-4">
-    <div class="row g-2">
-      <div class="col-md-3">
-        <label class="form-label">Jugador (opcional)</label>
-        <select name="player_id" class="form-select">
-          <option value="">-- General --</option>
-          <?php foreach ($players as $p): ?>
-            <option value="<?=$p['id']?>"><?=htmlspecialchars($p['team_name'] . ' - #' . $p['number'] . ' ' . $p['name'])?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Cuarto</label>
-        <input type="number" min="1" max="10" name="quarter" class="form-control" placeholder="1-4">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Tiempo restante (mm:ss)</label>
-        <input type="text" name="time_remaining" class="form-control" placeholder="05:23">
-      </div>
-      <div class="col-md-12">
-        <label class="form-label">Nota</label>
-        <textarea name="note_text" class="form-control" rows="3" required></textarea>
-      </div>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.php">Scouting</a>
     </div>
-    <div class="mt-2">
-      <button class="btn btn-primary">Guardar nota</button>
-    </div>
-  </form>
+  </nav>
 
-  <h3>Notas</h3>
-  <?php if (empty($notes)): ?>
-    <p>No hay notas todavía.</p>
-  <?php else: ?>
-    <div class="list-group">
-      <?php foreach ($notes as $n): ?>
-        <div class="list-group-item">
-          <div class="d-flex w-100 justify-content-between">
-            <h6 class="mb-1"><?=htmlspecialchars($n['player_name'] ? $n['player_name'] : 'General')?>
-              <?php if ($n['player_number']): ?>#<?=htmlspecialchars($n['player_number'])?><?php endif; ?>
-              <?php if ($n['quarter']): ?> — Cuarto <?=htmlspecialchars($n['quarter'])?><?php endif; ?>
-            </h6>
-            <small><?=htmlspecialchars($n['created_at'])?></small>
+  <main class="container my-4">
+    <h1 class="h5"><?=htmlspecialchars($match['home'])?> vs <?=htmlspecialchars($match['away'])?></h1>
+    <p class="text-muted small">Fecha: <?=htmlspecialchars($match['match_date'])?> · Lugar: <?=htmlspecialchars($match['location'])?></p>
+    <a class="btn btn-secondary btn-sm mb-3" href="index.php">Volver al listado</a>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="card-title">Añadir nota</h6>
+        <?php if (!empty($note_error)): ?><div class="alert alert-danger"><?=htmlspecialchars($note_error)?></div><?php endif; ?>
+        <form method="post" class="row g-2">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Jugador (opcional)</label>
+            <select name="player_id" class="form-select form-select-lg">
+              <option value="">-- General --</option>
+              <?php foreach ($players as $p): ?>
+                <option value="<?=$p['id']?>"><?=htmlspecialchars($p['team_name'] . ' - #' . $p['number'] . ' ' . $p['name'])?></option>
+              <?php endforeach; ?>
+            </select>
           </div>
-          <?php if ($n['time_remaining']): ?><small class="text-muted">Tiempo: <?=htmlspecialchars($n['time_remaining'])?></small><?php endif; ?>
-          <p class="mb-1 mt-2"><?=nl2br(htmlspecialchars($n['note_text']))?></p>
-        </div>
-      <?php endforeach; ?>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Cuarto</label>
+            <input type="number" min="1" max="10" name="quarter" class="form-control">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label">Tiempo (mm:ss)</label>
+            <input type="text" name="time_remaining" class="form-control" placeholder="05:23">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Nota</label>
+            <textarea name="note_text" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary mt-2">Guardar nota</button>
+          </div>
+        </form>
+      </div>
     </div>
-  <?php endif; ?>
+
+    <h6>Notas</h6>
+    <?php if (empty($notes)): ?>
+      <p>No hay notas todavía.</p>
+    <?php else: ?>
+      <div class="list-group">
+        <?php foreach ($notes as $n): ?>
+          <div class="list-group-item">
+            <div class="d-flex w-100 justify-content-between">
+              <div>
+                <strong><?=htmlspecialchars($n['player_name'] ? $n['player_name'] : 'General')?></strong>
+                <?php if ($n['player_number']): ?> <small class="text-muted">#<?=htmlspecialchars($n['player_number'])?></small><?php endif; ?>
+                <?php if ($n['quarter']): ?> <small class="text-muted">· C<?=htmlspecialchars($n['quarter'])?></small><?php endif; ?>
+              </div>
+              <small class="text-muted"><?=htmlspecialchars($n['created_at'])?></small>
+            </div>
+            <?php if ($n['time_remaining']): ?><div class="text-muted small">Tiempo: <?=htmlspecialchars($n['time_remaining'])?></div><?php endif; ?>
+            <p class="mb-0 mt-2"><?=nl2br(htmlspecialchars($n['note_text']))?></p>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
