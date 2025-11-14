@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($username === '' || $password === '') {
             $error = 'Rellena usuario y contraseña';
         } elseif (login_user($username, $password)) {
-            header('Location: /dashboard.php');
+            header('Location: dashboard.php');
             exit;
         } else {
             $error = 'Usuario o contraseña incorrectos';
