@@ -1,198 +1,122 @@
 <?php
 // public/add_match.php
+require_once __DIR__ . '/../src/config.php';
+require_once __DIR__ . '/../src/helpers.php';
 require_once __DIR__ . '/../src/db.php';
+secure_session_start(require __DIR__ . '/../src/config.php');
+require_login();
 
-function toUpper($s) {
-    if ($s === null) return null;
-    return function_exists('mb_strtoupper') ? mb_strtoupper($s, 'UTF-8') : strtoupper($s);
-}
-
-// Obtener categorías existentes
-$cats_res = $mysqli->query("SELECT id, name FROM categories ORDER BY name");
-$categories = $cats_res ? $cats_res->fetch_all(MYSQLI_ASSOC) : [];
+$errors = [];
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $match_date = $_POST['match_date'] ?? '';
-    $home = trim($_POST['home_team'] ?? '');
-    $away = trim($_POST['away_team'] ?? '');
-    $location = trim($_POST['location'] ?? '');
-    $selected_cat = !empty($_POST['category_id']) ? $_POST['category_id'] : null;
-    $new_category = trim($_POST['new_category'] ?? '');
-    $notes = trim($_POST['notes'] ?? '');
-
-    // Normalizar a mayúsculas (Unicode-aware) los equipos, categoría nueva y la ubicación
-    $home_up = toUpper($home);
-    $away_up = toUpper($away);
-    $location_up = toUpper($location);
-    $new_cat_up = $new_category !== '' ? toUpper($new_category) : '';
-
-    // Validación: evitar mismo equipo tras normalizar
-    if ($home_up !== '' && $away_up !== '' && $home_up === $away_up) {
-        $error = "El equipo local y el equipo visitante no pueden ser el mismo (tras normalizar mayúsculas).";
-    }
-
-    if (empty($error) && $match_date && $home && $away) {
-        $mysqli->begin_transaction();
-
-        try {
-            // Equipos: obtener o crear (buscando por UPPER(name) para evitar problemas de case)
-            $stmt = $mysqli->prepare("SELECT id FROM teams WHERE UPPER(name) = ? LIMIT 1");
-            $stmt->bind_param('s', $home_up);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            $row = $res->fetch_assoc();
-            if ($row) {
-                $home_id = (int)$row['id'];
-            } else {
-                $stmt = $mysqli->prepare("INSERT INTO teams (name) VALUES (?)");
-                $stmt->bind_param('s', $home_up);
-                $stmt->execute();
-                $home_id = $stmt->insert_id;
-            }
-
-            $stmt = $mysqli->prepare("SELECT id FROM teams WHERE UPPER(name) = ? LIMIT 1");
-            $stmt->bind_param('s', $away_up);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            $row = $res->fetch_assoc();
-            if ($row) {
-                $away_id = (int)$row['id'];
-            } else {
-                $stmt = $mysqli->prepare("INSERT INTO teams (name) VALUES (?)");
-                $stmt->bind_param('s', $away_up);
-                $stmt->execute();
-                $away_id = $stmt->insert_id;
-            }
-
-            // Categoría: si se ha proporcionado nueva categoría, crearla (guardándola en MAYÚSCULAS); si no, usar la seleccionada
-            $category_id = null;
-            if ($new_cat_up !== '') {
-                // comprobar si ya existe con ese nombre (case-insensitive)
-                $stmt = $mysqli->prepare("SELECT id FROM categories WHERE UPPER(name) = ? LIMIT 1");
-                $stmt->bind_param('s', $new_cat_up);
-                $stmt->execute();
-                $res = $stmt->get_result();
-                $row = $res->fetch_assoc();
-                if ($row) {
-                    $category_id = (int)$row['id'];
-                } else {
-                    $stmt = $mysqli->prepare("INSERT INTO categories (name) VALUES (?)");
-                    $stmt->bind_param('s', $new_cat_up);
-                    $stmt->execute();
-                    $category_id = $stmt->insert_id;
-                }
-            } elseif (!empty($selected_cat) && $selected_cat !== 'none') {
-                $category_id = (int)$selected_cat;
-            }
-
-            // Insertar partido (guardando location en MAYÚSCULAS)
-            $stmt = $mysqli->prepare("INSERT INTO matches (match_date, home_team_id, away_team_id, category_id, location, notes) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('siiiss', $match_date, $home_id, $away_id, $category_id, $location_up, $notes);
-            $stmt->execute();
-
-            $mysqli->commit();
-
-            header("Location: index.php");
-            exit;
-        } catch (Exception $e) {
-            $mysqli->rollback();
-            $error = "Error al guardar el partido: " . $e->getMessage();
-        }
+    if (!csrf_check($_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Token CSRF inválido';
     } else {
-        if (empty($error) && (! $match_date || ! $home || ! $away)) {
-            $error = "Rellena fecha, equipo local y visitante.";
+        $season_id = $_POST['season_id'] ?: null;
+        $category_id = $_POST['category_id'] ?: null;
+        $home = $_POST['home_team_id'] ?? null;
+        $away = $_POST['away_team_id'] ?? null;
+        $date = $_POST['date'] ?? null;
+        $competition = trim($_POST['competition'] ?? '');
+        $venue = trim($_POST['venue'] ?? '');
+        if (!$home || !$away || !$date) {
+            $errors[] = 'Home, away y fecha son obligatorios';
+        } elseif ($home == $away) {
+            $errors[] = 'El equipo local y visitante no pueden ser el mismo';
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO matches (season_id, category_id, home_team_id, away_team_id, date, competition, venue, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$season_id, $category_id, $home, $away, $date, $competition, $venue, $_SESSION['user_id'] ?? null]);
+            $success = 'Partido creado';
         }
     }
 }
+
+// Datos para formularios
+$seasons = $pdo->query("SELECT id, name FROM seasons ORDER BY start_date DESC")->fetchAll();
+$categories = $pdo->query("SELECT id, name FROM categories ORDER BY name")->fetchAll();
+$teams = $pdo->query("SELECT id, name FROM teams ORDER BY name")->fetchAll();
+$csrf = csrf_token();
 ?>
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Crear partido</title>
+  <title>Añadir partido - Scouting</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="assets/css/style.css" rel="stylesheet">
-  <style>
-    .new-cat-input { display:none; }
-  </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="index.php">Scouting</a>
+<div class="container py-4">
+  <a href="/dashboard.php" class="btn btn-link">&larr; Volver</a>
+  <h2>Añadir partido</h2>
+  <?php if ($errors): ?>
+    <div class="alert alert-danger">
+      <?php foreach($errors as $e) echo "<div>" . htmlspecialchars($e) . "</div>"; ?>
     </div>
-  </nav>
+  <?php endif; ?>
+  <?php if ($success): ?>
+    <div class="alert alert-success"><?=htmlspecialchars($success)?></div>
+  <?php endif; ?>
 
-  <main class="container my-4">
-    <h1 class="h5">Crear partido</h1>
-    <?php if (!empty($error)): ?><div class="alert alert-danger"><?=htmlspecialchars($error)?></div><?php endif; ?>
-    <form method="post" class="needs-validation" novalidate>
-      <div class="mb-3">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Temporada</label>
+        <select name="season_id" class="form-select">
+          <option value="">--</option>
+          <?php foreach($seasons as $s): ?>
+            <option value="<?=htmlspecialchars($s['id'])?>"><?=htmlspecialchars($s['name'])?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Categoría</label>
+        <select name="category_id" class="form-select">
+          <option value="">--</option>
+          <?php foreach($categories as $c): ?>
+            <option value="<?=htmlspecialchars($c['id'])?>"><?=htmlspecialchars($c['name'])?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-4 mb-3">
         <label class="form-label">Fecha y hora</label>
-        <input type="datetime-local" name="match_date" class="form-control form-control-lg" required>
+        <input type="datetime-local" name="date" class="form-control" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Local</label>
+        <select name="home_team_id" class="form-select" required>
+          <option value="">--</option>
+          <?php foreach($teams as $t): ?>
+            <option value="<?=htmlspecialchars($t['id'])?>"><?=htmlspecialchars($t['name'])?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Visitante</label>
+        <select name="away_team_id" class="form-select" required>
+          <option value="">--</option>
+          <?php foreach($teams as $t): ?>
+            <option value="<?=htmlspecialchars($t['id'])?>"><?=htmlspecialchars($t['name'])?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
 
-      <div class="row g-2">
-        <div class="col-12 col-md-6">
-          <label class="form-label">Equipo local (nombre)</label>
-          <input type="text" name="home_team" class="form-control form-control-lg" required>
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Equipo visitante (nombre)</label>
-          <input type="text" name="away_team" class="form-control form-control-lg" required>
-        </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Competición</label>
+        <input name="competition" class="form-control">
       </div>
-
-      <div class="row g-2 mt-2">
-        <div class="col-12 col-md-6">
-          <label class="form-label">Categoría</label>
-          <select name="category_id" id="categorySelect" class="form-select">
-            <option value="none">-- Sin categoría --</option>
-            <?php foreach ($categories as $c): ?>
-              <option value="<?= $c['id'] ?>"><?= htmlspecialchars(toUpper($c['name'])) ?></option>
-            <?php endforeach; ?>
-            <option value="new">+ Añadir nueva categoría...</option>
-          </select>
-        </div>
-        <div class="col-12 col-md-6 new-cat-input" id="newCategoryWrap">
-          <label class="form-label">Nueva categoría</label>
-          <input type="text" name="new_category" id="newCategory" class="form-control" placeholder="Introduce el nombre de la categoría">
-        </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Sede</label>
+        <input name="venue" class="form-control">
       </div>
+    </div>
 
-      <div class="mb-3 mt-3">
-        <label class="form-label">Ubicación</label>
-        <input type="text" name="location" class="form-control form-control-lg">
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Nota general del partido (opcional)</label>
-        <textarea name="notes" class="form-control" rows="3" placeholder="Observaciones generales del partido"></textarea>
-      </div>
-
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary btn-lg">Crear</button>
-        <a class="btn btn-secondary btn-lg" href="index.php">Volver</a>
-      </div>
-    </form>
-  </main>
-
-  <script>
-    // Mostrar input de nueva categoría si se elige la opción "new"
-    const catSelect = document.getElementById('categorySelect');
-    const newCatWrap = document.getElementById('newCategoryWrap');
-    catSelect && catSelect.addEventListener('change', function(){
-      if (this.value === 'new') {
-        newCatWrap.style.display = 'block';
-        document.getElementById('newCategory').focus();
-      } else {
-        newCatWrap.style.display = 'none';
-        document.getElementById('newCategory').value = '';
-      }
-    });
-  </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="mt-3">
+      <button class="btn btn-primary">Crear partido</button>
+    </div>
+  </form>
+</div>
 </body>
 </html>

@@ -1,31 +1,44 @@
 ```markdown
-# Scouting - Aplicación de Notas de Baloncesto (MVP)
+# Scouting - MVP inicial (PHP + MySQL)
 
-Este repositorio contiene un MVP para tomar notas de partidos de baloncesto usando PHP + MySQL.
+Proyecto mínimo para registro de equipos, temporadas, categorías y creación de partidos.
+Interfaz responsive pensada para móviles/tablets.
 
-Instrucciones rápidas:
+Estructura recomendada:
+- public/         <- archivos servidos por el webserver (login.php, dashboard.php, ...)
+- src/            <- lógica y utilidades (db.php, auth.php, helpers.php, create_admin.php)
+- sql/            <- schema.sql
+- assets/         <- css, js, imágenes
 
-1. Crear la base de datos:
-   - Ejecuta `init.sql` en tu servidor MySQL para crear la base de datos y tablas.
-     Por ejemplo:
-     mysql -u root -p < init.sql
+Requisitos:
+- PHP 8.0+ con PDO MySQL
+- MySQL / MariaDB
+- Servidor web (Apache/Nginx) apuntando public/ como document root
 
-2. Configurar conexión:
-   - Edita `src/config.php` con tus credenciales MySQL.
+Instalación rápida:
+1. Clona o sube los ficheros al repo y al servidor.
+2. Edita src/config.php con tus credenciales de base de datos.
+3. Importa la base de datos:
+   mysql -u root -p < sql/schema.sql
+   (o desde tu cliente MySQL preferido)
+4. Crea un usuario admin (desde CLI en el servidor):
+   php src/create_admin.php admin TU_CONTRASEÑA "Admin visible"
+5. Accede a /login.php y entra con ese usuario.
 
-3. Colocar archivos en tu servidor web:
-   - Sitúa la carpeta `public/` como raíz pública (document root).
-   - `src/` contiene configuración y conexión.
+Notas de seguridad:
+- En producción activa HTTPS y en src/config.php pon 'session_cookie_secure' => true.
+- No subas credenciales reales al repo público.
+- Implementa control de acceso/roles según evolucione la app.
+- Los formularios usan token CSRF básico; revisa y mejora según necesidades.
 
-4. Uso:
-   - Visita `/public/index.php` para ver/crear partidos.
-   - En cada partido puedes añadir notas por jugador/cuarto/tiempo.
+Siguientes mejoras sugeridas:
+- CRUD de jugadores y registro de eventos por partido (scouting en tiempo real).
+- API REST para app móvil.
+- Export CSV/PDF y dashboards con gráficos (Chart.js).
+- Tests y validación más estricta de entradas.
 
-Mejoras posibles:
-- Autenticación de usuarios.
-- Subida de imagenes o vídeo por nota.
-- Exportar notas a CSV/PDF.
-- Mejor gestión de jugadores (CRUD) y asignación dinámica a equipos.
-
-Si quieres, creo una rama en tu repo y subo estos archivos, y abro un PR. Dime si deseas que lo haga y el nombre de la rama que prefieres.
+Si quieres, hago un PR listo para tu repo con estos ficheros o te los doy listos para pegar. Dime si quieres que añada:
+- paginación en listados,
+- edición/borrado de registros desde la UI,
+- o conversión a un micro-framework (Slim) o Laravel.
 ```
