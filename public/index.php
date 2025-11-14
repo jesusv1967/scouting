@@ -1,13 +1,14 @@
 <?php
-// public/index.php (responsive)
+// public/index.php (responsive + muestra categoría)
 require_once __DIR__ . '/../src/db.php';
 
-// Obtener lista de partidos
+// Obtener lista de partidos con categoría
 $stmt = $mysqli->prepare("
-    SELECT m.id, m.match_date, t1.name AS home, t2.name AS away, m.location
+    SELECT m.id, m.match_date, t1.name AS home, t2.name AS away, m.location, c.name AS category
     FROM matches m
     JOIN teams t1 ON m.home_team_id = t1.id
     JOIN teams t2 ON m.away_team_id = t2.id
+    LEFT JOIN categories c ON m.category_id = c.id
     ORDER BY m.match_date DESC
 ");
 $stmt->execute();
@@ -18,7 +19,7 @@ $matches = $res->fetch_all(MYSQLI_ASSOC);
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- crucial para mobile/tablet -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Scouting - Partidos</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/css/style.css" rel="stylesheet">
@@ -56,6 +57,7 @@ $matches = $res->fetch_all(MYSQLI_ASSOC);
               <th>Fecha</th>
               <th>Local</th>
               <th>Visitante</th>
+              <th>Categoría</th>
               <th>Ubicación</th>
               <th class="text-end">Acciones</th>
             </tr>
@@ -66,6 +68,7 @@ $matches = $res->fetch_all(MYSQLI_ASSOC);
               <td><?=htmlspecialchars($m['match_date'])?></td>
               <td><?=htmlspecialchars($m['home'])?></td>
               <td><?=htmlspecialchars($m['away'])?></td>
+              <td><?=htmlspecialchars($m['category'] ?? '')?></td>
               <td><?=htmlspecialchars($m['location'])?></td>
               <td class="text-end">
                 <a class="btn btn-sm btn-outline-primary" href="view_match.php?id=<?=$m['id']?>">Ver</a>

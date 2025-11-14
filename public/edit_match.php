@@ -1,5 +1,5 @@
 <?php
-// public/add_match.php
+// public/edit_match.php
 require_once __DIR__ . '/../src/db.php';
 
 function toUpper($s) {
@@ -7,10 +7,35 @@ function toUpper($s) {
     return function_exists('mb_strtoupper') ? mb_strtoupper($s, 'UTF-8') : strtoupper($s);
 }
 
+$match_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if (!$match_id) {
+    header("Location: index.php");
+    exit;
+}
+
 // Obtener categorías existentes
 $cats_res = $mysqli->query("SELECT id, name FROM categories ORDER BY name");
 $categories = $cats_res ? $cats_res->fetch_all(MYSQLI_ASSOC) : [];
 
+// Cargar partido actual
+$stmt = $mysqli->prepare("
+    SELECT m.*, t1.name AS home_name, t2.name AS away_name, c.name AS category_name
+    FROM matches m
+    JOIN teams t1 ON m.home_team_id = t1.id
+    JOIN teams t2 ON m.away_team_id = t2.id
+    LEFT JOIN categories c ON m.category_id = c.id
+    WHERE m.id = ?
+    LIMIT 1
+");
+$stmt->bind_param('i', $match_id);
+$stmt->execute();
+$match = $stmt->get_result()->fetch_assoc();
+if (!$match) {
+    echo "Partido no encontrado.";
+    exit;
+}
+
+// Manejar POST: actualizar partido
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $match_date = $_POST['match_date'] ?? '';
     $home = trim($_POST['home_team'] ?? '');
@@ -20,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_category = trim($_POST['new_category'] ?? '');
     $notes = trim($_POST['notes'] ?? '');
 
-    // Normalizar a mayúsculas (Unicode-aware) los equipos, categoría nueva y la ubicación
+    // Normalizar a mayúsculas equipos, categoría nueva y ubicación
     $home_up = toUpper($home);
     $away_up = toUpper($away);
     $location_up = toUpper($location);
@@ -35,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mysqli->begin_transaction();
 
         try {
-            // Equipos: obtener o crear (buscando por UPPER(name) para evitar problemas de case)
+            // Obtener o crear home team (buscando por UPPER(name))
             $stmt = $mysqli->prepare("SELECT id FROM teams WHERE UPPER(name) = ? LIMIT 1");
             $stmt->bind_param('s', $home_up);
             $stmt->execute();
@@ -50,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $home_id = $stmt->insert_id;
             }
 
+            // Obtener o crear away team
             $stmt = $mysqli->prepare("SELECT id FROM teams WHERE UPPER(name) = ? LIMIT 1");
             $stmt->bind_param('s', $away_up);
             $stmt->execute();
@@ -64,10 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $away_id = $stmt->insert_id;
             }
 
-            // Categoría: si se ha proporcionado nueva categoría, crearla (guardándola en MAYÚSCULAS); si no, usar la seleccionada
+            // Categoría: crear si se indica nueva (guardada en MAYÚSCULAS)
             $category_id = null;
             if ($new_cat_up !== '') {
-                // comprobar si ya existe con ese nombre (case-insensitive)
                 $stmt = $mysqli->prepare("SELECT id FROM categories WHERE UPPER(name) = ? LIMIT 1");
                 $stmt->bind_param('s', $new_cat_up);
                 $stmt->execute();
@@ -85,14 +110,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $category_id = (int)$selected_cat;
             }
 
-            // Insertar partido (guardando location en MAYÚSCULAS)
-            $stmt = $mysqli->prepare("INSERT INTO matches (match_date, home_team_id, away_team_id, category_id, location, notes) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('siiiss', $match_date, $home_id, $away_id, $category_id, $location_up, $notes);
+            // Actualizar partido (guardando location en MAYÚSCULAS)
+            $stmt = $mysqli->prepare("UPDATE matches SET match_date = ?, home_team_id = ?, away_team_id = ?, category_id = ?, location = ?, notes = ? WHERE id = ?");
+            $stmt->bind_param('siiissi', $match_date, $home_id, $away_id, $category_id, $location_up, $notes, $match_id);
             $stmt->execute();
 
             $mysqli->commit();
 
-            header("Location: index.php");
+            header("Location: view_match.php?id=" . $match_id);
             exit;
         } catch (Exception $e) {
             $mysqli->rollback();
@@ -104,18 +129,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Preparar valores para el formulario (formatea datetime-local)
+$dt = '';
+if (!empty($match['match_date'])) {
+    $dtObj = new DateTime($match['match_date']);
+    $dt = $dtObj->format('Y-m-d\TH:i');
+}
 ?>
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Crear partido</title>
+  <title>Editar partido</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/css/style.css" rel="stylesheet">
-  <style>
-    .new-cat-input { display:none; }
-  </style>
+  <style>.new-cat-input{display:none;}</style>
 </head>
 <body>
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -125,22 +155,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </nav>
 
   <main class="container my-4">
-    <h1 class="h5">Crear partido</h1>
+    <h1 class="h5">Editar partido</h1>
     <?php if (!empty($error)): ?><div class="alert alert-danger"><?=htmlspecialchars($error)?></div><?php endif; ?>
+
     <form method="post" class="needs-validation" novalidate>
       <div class="mb-3">
         <label class="form-label">Fecha y hora</label>
-        <input type="datetime-local" name="match_date" class="form-control form-control-lg" required>
+        <input type="datetime-local" name="match_date" class="form-control" value="<?=htmlspecialchars($dt)?>" required>
       </div>
 
       <div class="row g-2">
         <div class="col-12 col-md-6">
           <label class="form-label">Equipo local (nombre)</label>
-          <input type="text" name="home_team" class="form-control form-control-lg" required>
+          <input type="text" name="home_team" class="form-control" required value="<?=htmlspecialchars($match['home_name'])?>">
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">Equipo visitante (nombre)</label>
-          <input type="text" name="away_team" class="form-control form-control-lg" required>
+          <input type="text" name="away_team" class="form-control" required value="<?=htmlspecialchars($match['away_name'])?>">
         </div>
       </div>
 
@@ -150,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <select name="category_id" id="categorySelect" class="form-select">
             <option value="none">-- Sin categoría --</option>
             <?php foreach ($categories as $c): ?>
-              <option value="<?= $c['id'] ?>"><?= htmlspecialchars(toUpper($c['name'])) ?></option>
+              <option value="<?= $c['id'] ?>" <?= ($c['id'] == $match['category_id']) ? 'selected' : '' ?>><?= htmlspecialchars(toUpper($c['name'])) ?></option>
             <?php endforeach; ?>
             <option value="new">+ Añadir nueva categoría...</option>
           </select>
@@ -163,17 +194,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <div class="mb-3 mt-3">
         <label class="form-label">Ubicación</label>
-        <input type="text" name="location" class="form-control form-control-lg">
+        <input type="text" name="location" class="form-control" value="<?=htmlspecialchars($match['location'])?>">
       </div>
 
       <div class="mb-3">
         <label class="form-label">Nota general del partido (opcional)</label>
-        <textarea name="notes" class="form-control" rows="3" placeholder="Observaciones generales del partido"></textarea>
+        <textarea name="notes" class="form-control" rows="3"><?=htmlspecialchars($match['notes'])?></textarea>
       </div>
 
       <div class="d-flex gap-2">
-        <button class="btn btn-primary btn-lg">Crear</button>
-        <a class="btn btn-secondary btn-lg" href="index.php">Volver</a>
+        <button class="btn btn-primary">Guardar cambios</button>
+        <a class="btn btn-secondary" href="view_match.php?id=<?= $match_id ?>">Cancelar</a>
       </div>
     </form>
   </main>

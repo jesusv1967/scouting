@@ -1,5 +1,5 @@
 <?php
-// public/view_match.php (responsive)
+// public/view_match.php (muestra categoría y nota general; añade botón para editar)
 require_once __DIR__ . '/../src/db.php';
 
 $match_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -8,12 +8,13 @@ if (!$match_id) {
     exit;
 }
 
-// Obtener info del partido
+// Obtener info del partido incluyendo categoría
 $stmt = $mysqli->prepare("
-    SELECT m.*, t1.name AS home, t2.name AS away
+    SELECT m.*, t1.name AS home, t2.name AS away, c.name AS category_name
     FROM matches m
     JOIN teams t1 ON m.home_team_id = t1.id
     JOIN teams t2 ON m.away_team_id = t2.id
+    LEFT JOIN categories c ON m.category_id = c.id
     WHERE m.id = ?
     LIMIT 1
 ");
@@ -32,7 +33,7 @@ $stmt->bind_param('ii', $match['home_team_id'], $match['away_team_id']);
 $stmt->execute();
 $players = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Manejar creación de nota
+// Manejar creación de nota (por jugador)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note_text'])) {
     $player_id = !empty($_POST['player_id']) ? (int)$_POST['player_id'] : null;
     $quarter = !empty($_POST['quarter']) ? (int)$_POST['quarter'] : null;
@@ -79,9 +80,28 @@ $notes = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
   </nav>
 
   <main class="container my-4">
-    <h1 class="h5"><?=htmlspecialchars($match['home'])?> vs <?=htmlspecialchars($match['away'])?></h1>
-    <p class="text-muted small">Fecha: <?=htmlspecialchars($match['match_date'])?> · Lugar: <?=htmlspecialchars($match['location'])?></p>
-    <a class="btn btn-secondary btn-sm mb-3" href="index.php">Volver al listado</a>
+    <div class="d-flex align-items-start justify-content-between mb-2">
+      <div>
+        <h1 class="h5"><?=htmlspecialchars($match['home'])?> vs <?=htmlspecialchars($match['away'])?></h1>
+        <p class="text-muted small">
+          Fecha: <?=htmlspecialchars($match['match_date'])?> · Lugar: <?=htmlspecialchars($match['location'])?>
+          <?php if (!empty($match['category_name'])): ?> · <strong>Categoría:</strong> <?=htmlspecialchars($match['category_name'])?><?php endif; ?>
+        </p>
+      </div>
+      <div class="text-end">
+        <a class="btn btn-outline-secondary btn-sm" href="edit_match.php?id=<?= $match_id ?>">Editar partido</a>
+        <a class="btn btn-secondary btn-sm" href="index.php">Volver</a>
+      </div>
+    </div>
+
+    <?php if (!empty($match['notes'])): ?>
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="card-title">Nota general</h6>
+          <p class="mb-0"><?=nl2br(htmlspecialchars($match['notes']))?></p>
+        </div>
+      </div>
+    <?php endif; ?>
 
     <div class="card mb-4">
       <div class="card-body">
