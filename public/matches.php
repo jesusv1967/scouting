@@ -167,8 +167,10 @@ $csrf = csrf_token();
 
 <main class="container py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="h5 mb-0">Partidos</h2>
+    <a href="<?=htmlspecialchars(url('dashboard.php'))?>" class="btn btn-outline-secondary mb-3">&larr; Volver al dashboard</a>
+	<h2 class="h5 mb-0">Partidos</h2>
     <div>
+	
       <a href="<?=htmlspecialchars(url('add_match.php'))?>" class="btn btn-primary touch-btn">Nuevo partido</a>
     </div>
   </div>
