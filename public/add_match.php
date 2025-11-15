@@ -575,6 +575,44 @@ $csrf = csrf_token();
 <?php
 // === FIN BLOQUE JUGADORES ===
 ?>
+<?php
+// Compacto: inputs por cuartos en una sola línea (4 cuartos por defecto)
+$quarters_existing = $quarters_existing ?? [];
+$default_quarters = 4;
+?>
+<div class="mb-3">
+  <label class="form-label visually-hidden">Puntuaciones por cuartos</label>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <?php for ($i = 0; $i < $default_quarters; $i++):
+      $h = isset($quarters_existing[$i]['home']) ? $quarters_existing[$i]['home'] : '';
+      $a = isset($quarters_existing[$i]['away']) ? $quarters_existing[$i]['away'] : '';
+    ?>
+      <div class="d-flex align-items-center gap-1">
+        <span class="small fw-semibold me-1">Q<?= $i+1 ?></span>
+        <input type="number" min="0" name="home_q[]" class="form-control form-control-sm" style="width:72px" placeholder="L" value="<?= htmlspecialchars($h) ?>" aria-label="Q<?= $i+1 ?> Local">
+        <span class="text-muted mx-1">–</span>
+        <input type="number" min="0" name="away_q[]" class="form-control form-control-sm" style="width:72px" placeholder="V" value="<?= htmlspecialchars($a) ?>" aria-label="Q<?= $i+1 ?> Visitante">
+      </div>
+    <?php endfor; ?>
+
+    <!-- Totales / override compactos -->
+    <div class="d-flex align-items-center gap-1 ms-2">
+      <input type="number" name="home_score_override" class="form-control form-control-sm" style="width:88px" placeholder="Total L" value="<?= htmlspecialchars($matchToEdit['home_score'] ?? '') ?>" aria-label="Puntuación total local (override)">
+      <span class="text-muted mx-1">/</span>
+      <input type="number" name="away_score_override" class="form-control form-control-sm" style="width:88px" placeholder="Total V" value="<?= htmlspecialchars($matchToEdit['away_score'] ?? '') ?>" aria-label="Puntuación total visitante (override)">
+    </div>
+  </div>
+
+  <div class="form-text small mt-1">Introduce las puntuaciones por cuarto (L = local, V = visitante). En pantallas pequeñas los campos harán wrap automáticamente.</div>
+</div>
+
+
+
+
+
+
+
+
 
     <!-- Notas generales -->
     <div class="mb-3">
