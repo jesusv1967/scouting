@@ -311,6 +311,7 @@ $csrf = csrf_token();
 <?php require_once __DIR__ . '/_nav.php'; ?>
 
 <div class="container py-4">
+<a href="<?=htmlspecialchars(url('dashboard.php'))?>" class="btn btn-outline-secondary mb-3">&larr; Volver al dashboard</a>
   <a href="<?=htmlspecialchars(url('matches.php'))?>" class="btn btn-outline-secondary mb-3">&larr; Volver a Partidos</a>
   <h2><?= $editId ? 'Editar partido' : 'Añadir partido' ?></h2>
 
