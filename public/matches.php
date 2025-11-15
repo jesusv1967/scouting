@@ -1,15 +1,7 @@
 <?php
 // public/matches.php
-// Lista de partidos mejorada para móvil/tablet + modal responsive fullscreen en pantallas pequeñas.
-//
-// Cambios principales:
-// - Modal usa modal-fullscreen-md-down (fullscreen en md y menores) para tablets/móviles.
-// - En pantallas pequeñas la tabla se reemplaza por "cards" touch-friendly (d-block d-md-none).
-// - Ajustes CSS para touch targets (badges, botones, paddings).
-// - Los listeners JS abren el modal tanto al pulsar la fila de la tabla como la tarjeta móvil.
-// - Datos de roster inyectados en JS como antes.
-//
-// Reemplaza tu public/matches.php por este archivo.
+// Lista de partidos con soporte para mostrar media (imágenes y vídeos) en el modal.
+// Incluye JS robusto para abrir modal al pulsar la fila (delegación) y rutas de media resueltas.
 
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once __DIR__ . '/../src/db.php';
@@ -54,7 +46,7 @@ $matches = $stmt->fetchAll();
 
 // Recoger roster (titulares + suplentes) para los partidos listados
 $match_rosters = []; // match_id => team_id => [ { player_id, label, is_starter, notes } ]
-
+$matchIds = [];
 if (count($matches) > 0) {
     $matchIds = array_map(fn($m) => (int)$m['id'], $matches);
     $placeholders = implode(',', array_fill(0, count($matchIds), '?'));
@@ -84,6 +76,32 @@ if (count($matches) > 0) {
             'notes' => $r['notes'] ?? '',
         ];
     }
+}
+
+// Recoger media asociado a los partidos listados
+$match_media_map = []; // match_id => [ {id,file_name,original_name,mime_type,size,media_type,thumb_path,created_at} ]
+if (!empty($matchIds)) {
+    $placeholders = implode(',', array_fill(0, count($matchIds), '?'));
+    $psm = $pdo->prepare("SELECT * FROM match_media WHERE match_id IN ($placeholders) ORDER BY created_at ASC");
+    $psm->execute($matchIds);
+    $rowsm = $psm->fetchAll();
+    foreach ($rowsm as $mm) {
+        $mid = (int)$mm['match_id'];
+        if (!isset($match_media_map[$mid])) $match_media_map[$mid] = [];
+        $match_media_map[$mid][] = $mm;
+    }
+}
+
+// Resolver rutas a URLs públicas usando helper url()
+if (!empty($match_media_map)) {
+    foreach ($match_media_map as $mid => &$list) {
+        foreach ($list as &$mm) {
+            // file_name and thumb_path are stored relative to public/ (e.g. uploads/...)
+            $mm['url'] = url($mm['file_name']);
+            $mm['thumb_url'] = $mm['thumb_path'] ? url($mm['thumb_path']) : null;
+        }
+    }
+    unset($mm, $list);
 }
 
 // Helper para acortar etiqueta (para badges)
@@ -136,6 +154,8 @@ $csrf = csrf_token();
     .match-card .title { font-size:1rem; font-weight:700; }
     .match-card .meta { font-size:0.86rem; color:#666; }
     .touch-btn { min-height:44px; padding:8px 12px; font-size:0.95rem; }
+    .modal-media img, .modal-media video { max-width:100%; display:block; margin-bottom:8px; border-radius:6px; }
+    .modal-media .media-item { width:100%; max-width:320px; margin-right:8px; }
     @media (max-width: 767px) {
       .starter-pill { font-size:0.82rem; padding:6px 8px; }
       .score-badge { font-size:1.02rem; padding:10px 14px; }
@@ -147,7 +167,6 @@ $csrf = csrf_token();
 
 <main class="container py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-  <a href="<?=htmlspecialchars(url('dashboard.php'))?>" class="btn btn-outline-secondary mb-3">&larr; Volver al dashboard</a>
     <h2 class="h5 mb-0">Partidos</h2>
     <div>
       <a href="<?=htmlspecialchars(url('add_match.php'))?>" class="btn btn-primary touch-btn">Nuevo partido</a>
@@ -394,6 +413,13 @@ $csrf = csrf_token();
           <h6>Notas del partido</h6>
           <div id="modal-match-notes" class="small text-muted"></div>
         </div>
+
+        <hr>
+        <div>
+          <h6>Archivos adjuntos</h6>
+          <div id="modal-media-list" class="d-flex flex-wrap modal-media gap-2"></div>
+        </div>
+
       </div>
       <div class="modal-footer">
         <a id="modal-edit-link" class="btn btn-primary">Editar partido</a>
@@ -407,8 +433,9 @@ $csrf = csrf_token();
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-  // Transfer PHP roster data to JS
+  // Transfer PHP roster and media data to JS
   const MATCH_ROSTERS = <?= json_encode($match_rosters, JSON_UNESCAPED_UNICODE) ?>;
+  const MATCH_MEDIA = <?= json_encode($match_media_map, JSON_UNESCAPED_UNICODE) ?>;
   const MATCH_META = <?= json_encode(array_map(function($m){
       return [
         'id' => (int)$m['id'],
@@ -422,29 +449,41 @@ $csrf = csrf_token();
         'notes' => $m['notes'] ?? '',
       ];
   }, $matches), JSON_UNESCAPED_UNICODE) ?>;
+</script>
 
-  (function(){
+<script>
+/*
+  JS robusto: delegación para abrir modal al pulsar fila/tarjeta, renderizado defensivo y media urls.
+*/
+(function(){
+  // Esperar al DOM ready (si tu script ya está al final del body no es estrictamente necesario)
+  function ready(fn) {
+    if (document.readyState !== 'loading') fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+  }
+
+  ready(function(){
     if (typeof bootstrap === 'undefined') {
-      console.error('Bootstrap JS no está disponible.');
+      console.error('Bootstrap JS no está cargado. Asegúrate de incluir bootstrap.bundle.min.js antes de este script.');
       return;
     }
     const modalEl = document.getElementById('matchDetailModal');
-    if (!modalEl) { console.error('Modal element not found'); return; }
-    const bsModal = new bootstrap.Modal(modalEl);
-
-    // Open from table rows (desktop) and from cards (mobile)
-    function attachOpenHandlers() {
-      document.querySelectorAll('.match-row, .match-card').forEach(el => {
-        el.addEventListener('click', (e) => {
-          // don't open modal if clicking on interactive elements
-          if (e.target.closest('a,button,form,input,select,textarea')) return;
-          const matchId = el.dataset.matchId ? parseInt(el.dataset.matchId, 10) : null;
-          if (!matchId) return;
-          openMatchModal(matchId);
-        });
-      });
+    if (!modalEl) {
+      console.error('Elemento modal #matchDetailModal no encontrado en el DOM.');
+      return;
     }
-    attachOpenHandlers();
+
+    // Lazy init
+    let bsModal = null;
+    function getModal() {
+      if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
+      return bsModal;
+    }
+
+    function escapeHtml(s){
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
 
     function createPlayerHtml(p){
       const notesHtml = p.notes ? `<div class="text-muted small">${escapeHtml(p.notes)}</div>` : '';
@@ -452,9 +491,10 @@ $csrf = csrf_token();
       return `<div class="mb-2"><div>${starBadge}<strong>${escapeHtml(p.label)}</strong></div>${notesHtml}</div>`;
     }
 
-    function openMatchModal(matchId){
-      const meta = MATCH_META.find(m => m.id === matchId);
-      const rosters = MATCH_ROSTERS[matchId] || {};
+    function renderMatchIntoModal(matchId){
+      const meta = (typeof MATCH_META !== 'undefined') ? MATCH_META.find(m => m.id === matchId) : null;
+      const rosters = (typeof MATCH_ROSTERS !== 'undefined') ? (MATCH_ROSTERS[matchId] || {}) : {};
+      const media = (typeof MATCH_MEDIA !== 'undefined') ? (MATCH_MEDIA[matchId] || []) : [];
       const homeId = meta ? meta.home_team_id : null;
       const awayId = meta ? meta.away_team_id : null;
 
@@ -463,39 +503,77 @@ $csrf = csrf_token();
       document.getElementById('modal-away-name').textContent = meta ? meta.away_name : 'Visitante';
       document.getElementById('modal-match-notes').textContent = meta ? meta.notes : '';
 
-      const homeStarEl = document.getElementById('modal-home-starters'); homeStarEl.innerHTML = '';
-      const homeSubEl = document.getElementById('modal-home-subs'); homeSubEl.innerHTML = '';
-      const awayStarEl = document.getElementById('modal-away-starters'); awayStarEl.innerHTML = '';
-      const awaySubEl = document.getElementById('modal-away-subs'); awaySubEl.innerHTML = '';
-
       const homeRoster = rosters[homeId] || [];
       const awayRoster = rosters[awayId] || [];
 
       const hStar = homeRoster.filter(p => p.is_starter);
-      const hSub = homeRoster.filter(p => !p.is_starter);
+      const hSub  = homeRoster.filter(p => !p.is_starter);
       const aStar = awayRoster.filter(p => p.is_starter);
-      const aSub = awayRoster.filter(p => !p.is_starter);
+      const aSub  = awayRoster.filter(p => !p.is_starter);
 
-      homeStarEl.innerHTML = hStar.length ? hStar.map(createPlayerHtml).join('') : '<div class="text-muted small">Sin titulares</div>';
-      homeSubEl.innerHTML = hSub.length ? hSub.map(createPlayerHtml).join('') : '<div class="text-muted small">Sin suplentes</div>';
-      awayStarEl.innerHTML = aStar.length ? aStar.map(createPlayerHtml).join('') : '<div class="text-muted small">Sin titulares</div>';
-      awaySubEl.innerHTML = aSub.length ? aSub.map(createPlayerHtml).join('') : '<div class="text-muted small">Sin suplentes</div>';
+      document.getElementById('modal-home-starters').innerHTML = hStar.length ? hStar.map(createPlayerHtml).join('') : '<div class="text-muted small">Sin titulares</div>';
+      document.getElementById('modal-home-subs').innerHTML     = hSub.length  ? hSub.map(createPlayerHtml).join('')  : '<div class="text-muted small">Sin suplentes</div>';
+      document.getElementById('modal-away-starters').innerHTML = aStar.length ? aStar.map(createPlayerHtml).join('') : '<div class="text-muted small">Sin titulares</div>';
+      document.getElementById('modal-away-subs').innerHTML     = aSub.length  ? aSub.map(createPlayerHtml).join('')  : '<div class="text-muted small">Sin suplentes</div>';
+
+      const mediaContainer = document.getElementById('modal-media-list');
+      if (mediaContainer) {
+        mediaContainer.innerHTML = '';
+        media.forEach(m => {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'media-item';
+          if (m.media_type === 'image') {
+            const img = document.createElement('img');
+            img.src = m.thumb_url ? m.thumb_url : (m.thumb_path ? (m.thumb_path[0] === '/' ? m.thumb_path : ('/' + m.thumb_path)) : (m.url ? m.url : ('/' + m.file_name)));
+            img.alt = m.original_name || '';
+            wrapper.appendChild(img);
+          } else if (m.media_type === 'video') {
+            const v = document.createElement('video');
+            v.controls = true;
+            v.src = m.url ? m.url : ('/' + m.file_name);
+            if (m.thumb_url) v.poster = m.thumb_url;
+            wrapper.appendChild(v);
+          } else {
+            const a = document.createElement('a');
+            a.href = m.url ? m.url : ('/' + m.file_name);
+            a.textContent = m.original_name || m.file_name;
+            a.target = '_blank';
+            wrapper.appendChild(a);
+          }
+          mediaContainer.appendChild(wrapper);
+        });
+      }
 
       const editLink = document.getElementById('modal-edit-link');
-      editLink.href = '<?= htmlspecialchars(url('add_match.php')) ?>?id=' + matchId;
-
-      bsModal.show();
+      if (editLink && meta) editLink.href = '<?= htmlspecialchars(url('add_match.php')) ?>?id=' + matchId;
     }
 
-    function escapeHtml(s){
-      if (!s) return '';
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+    // Delegated click handler
+    document.body.addEventListener('click', function(e){
+      // don't open modal if clicking on interactive elements
+      if (e.target.closest('a,button,form,input,select,textarea')) return;
+      const row = e.target.closest('.match-row, .match-card');
+      if (!row) return;
+      const matchId = row.dataset.matchId ? parseInt(row.dataset.matchId, 10) : null;
+      if (!matchId) return;
+      try {
+        renderMatchIntoModal(matchId);
+        getModal().show();
+      } catch (err) {
+        console.error('Error al abrir modal de partido:', err);
+      }
+    });
 
-    // Re-attach handlers if cards/rows are updated dynamically
-    // (useful if you later add AJAX pagination)
-    window.addEventListener('matches:refresh', attachOpenHandlers);
-  })();
+    // debug helpers
+    window._debugMatches = {
+      countRows: function(){ return document.querySelectorAll('.match-row').length; },
+      hasModal: function(){ return !!document.getElementById('matchDetailModal'); },
+      isBootstrap: function(){ return typeof bootstrap !== 'undefined'; }
+    };
+
+    console.log('Match modal handler inicializado. Filas detectadas:', document.querySelectorAll('.match-row, .match-card').length);
+  });
+})();
 </script>
 </body>
 </html>
