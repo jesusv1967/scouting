@@ -169,3 +169,87 @@ a.card:hover{
   font-weight:600;
   font-size:0.9rem;
 }
+
+//MEjoras
+
+/* assets/css/style.css */
+:root {
+  --primary: #1e3a8a;       /* Azul oscuro (baloncesto) */
+  --primary-light: #3b82f6;
+  --danger: #ef4444;
+  --success: #10b981;
+  --bg: #f9fafb;
+  --text: #1f2937;
+  --border: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 18px; /* ¡Más grande para móviles! */
+  line-height: 1.5;
+  margin: 0;
+  padding: 12px;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+h1, h2, h3 {
+  margin-top: 0;
+  color: var(--primary);
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+form button,
+button {
+  width: 100%;
+  padding: 14px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+button.primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+button.danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+label {
+  font-weight: bold;
+  display: block;
+  margin-top: 12px;
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 14px;
+  color: #6b7280;
+}
