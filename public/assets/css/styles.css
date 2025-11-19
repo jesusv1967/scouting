@@ -1,255 +1,183 @@
-/* assets/css/styles.css
-   Estilos mejorados para una apariencia más cálida y moderna.
-   Incluye Google Font (Poppins) mediante @import para no tocar plantillas.
-*/
+/* public/assets/css/styles.css */
+/* Diseño móvil-first para scouting de baloncesto */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-
-:root{
-  --bg-100: #f6f9fc;
-  --bg-200: #eef4fb;
-  --card: #ffffff;
-  --accent: #FF6B35;     /* naranja cálido */
-  --accent-2: #0D6EFD;   /* azul bootstrap-ish */
-  --muted: #6c757d;
-  --text: #0b2540;
-  --radius: 12px;
-}
-
-/* Global */
-html,body{
-  height:100%;
-}
-body{
-  margin:0;
-  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color:var(--text);
-  background: linear-gradient(180deg, var(--bg-100) 0%, var(--bg-200) 100%);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  font-size:15px;
-  line-height:1.45;
-}
-
-/* Container tweaks */
-.container{
-  max-width:1100px;
-}
-
-/* Navbar */
-.navbar{
-  background: linear-gradient(90deg, rgba(13,110,253,0.03), rgba(255,107,53,0.02));
-  border-bottom: 1px solid rgba(11,37,64,0.04);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
-}
-.navbar-brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-weight:700;
-  color:var(--text);
-  letter-spacing:0.2px;
-}
-.brand-logo{
-  height:36px;
-  width:36px;
-  display:inline-block;
-}
-
-/* Cards */
-.card{
-  border: none;
-  border-radius: var(--radius);
-  background: var(--card);
-  box-shadow: 0 8px 20px rgba(11,37,64,0.06);
-}
-
-/* Dashboard tiles */
-.card .card-body {
-  padding:1.35rem;
-}
-.card-title{
-  font-weight:600;
-  color:var(--text);
-}
-.card-text{
-  color:var(--muted);
-}
-
-/* Tile hover */
-a.card:hover{
-  transform: translateY(-6px);
-  transition: all 220ms cubic-bezier(.2,.9,.2,1);
-  box-shadow: 0 18px 40px rgba(11,37,64,0.08);
-  text-decoration:none;
-}
-
-/* Forms */
-.form-label{
-  font-size:0.92rem;
-  color:var(--text);
-}
-.form-control{
-  border-radius:10px;
-  border:1px solid rgba(11,37,64,0.08);
-  padding:10px 12px;
-  box-shadow: inset 0 1px 0 rgba(16,24,40,0.02);
-  transition: box-shadow .15s ease, border-color .15s ease;
-}
-.form-control:focus{
-  outline: none;
-  border-color: rgba(13,110,253,0.6);
-  box-shadow: 0 6px 18px rgba(13,110,253,0.06);
-}
-
-/* Buttons */
-.btn-primary{
-  background: linear-gradient(90deg, var(--accent-2), #0066ff);
-  border: none;
-  box-shadow: 0 8px 18px rgba(13,110,253,0.12);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-weight:600;
-}
-.btn-primary:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(13,110,253,0.14);
-}
-.btn-outline-secondary{
-  border-radius: 10px;
-  padding: 8px 12px;
-}
-
-/* Alerts */
-.alert{
-  border-radius: 10px;
-}
-
-/* Login card specific */
-.login-card {
-  max-width: 520px;
-  margin: 24px auto;
-}
-.login-illustration {
-  width:100%;
-  height:140px;
-  background: linear-gradient(135deg, rgba(255,107,53,0.08), rgba(13,110,253,0.04));
-  border-radius: 10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin-bottom:12px;
-}
-
-/* Small helpers */
-.text-muted-sm{
-  color:var(--muted);
-  font-size:0.9rem;
-}
-
-/* Tables */
-.table-sm td, .table-sm th {
-  padding: 0.45rem 0.6rem;
-}
-
-/* Responsive tweaks */
-@media (max-width:767px){
-  .card-title { font-size:1rem; }
-  .container { padding-left:14px; padding-right:14px; }
-  .brand-logo { height:30px; width:30px; }
-}
-
-/* Utility: accent pill used in lists */
-.pill-accent{
-  display:inline-block;
-  padding:6px 10px;
-  border-radius:999px;
-  background: linear-gradient(90deg, rgba(255,107,53,0.12), rgba(13,110,253,0.06));
-  color:var(--text);
-  font-weight:600;
-  font-size:0.9rem;
-}
-
-//MEjoras
-
-/* assets/css/style.css */
 :root {
-  --primary: #1e3a8a;       /* Azul oscuro (baloncesto) */
-  --primary-light: #3b82f6;
-  --danger: #ef4444;
-  --success: #10b981;
-  --bg: #f9fafb;
-  --text: #1f2937;
+  --primary: #1e3a8a;        /* Azul NBA */
+  --primary-dark: #1e40af;
+  --secondary: #dc2626;      /* Rojo (para errores o acciones clave) */
+  --success: #059669;        /* Verde (para éxitos o tiros anotados) */
+  --light: #f9fafb;
+  --dark: #111827;
+  --gray: #6b7280;
   --border: #e5e7eb;
+  --card-bg: #ffffff;
 }
 
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 18px; /* ¡Más grande para móviles! */
-  line-height: 1.5;
-  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 18px;             /* Tamaño mínimo táctil */
+  line-height: 1.6;
+  background-color: var(--light);
+  color: var(--dark);
   padding: 12px;
-  background-color: var(--bg);
-  color: var(--text);
 }
 
-h1, h2, h3 {
-  margin-top: 0;
+h1, h2, h3, h4 {
+  margin-bottom: 16px;
   color: var(--primary);
 }
 
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+a {
+  color: var(--primary);
+  text-decoration: none;
 }
 
-form button,
-button {
+a:hover {
+  text-decoration: underline;
+}
+
+/* Tarjetas / contenedores */
+.card {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border);
+}
+
+/* Formularios */
+form label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+input, select, textarea, button {
   width: 100%;
   padding: 14px;
   font-size: 18px;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 14px;
 }
 
-button.primary {
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.2);
+}
+
+/* Botones */
+button, .btn {
+  background-color: var(--primary);
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover, button:active {
+  background-color: var(--primary-dark);
+}
+
+button.danger {
+  background-color: var(--secondary);
+}
+
+button.danger:hover {
+  background-color: #b91c1c;
+}
+
+button.success {
+  background-color: var(--success);
+}
+
+button.success:hover {
+  background-color: #047857;
+}
+
+/* Botones de acción rápida (scouting en vivo) */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.quick-actions button {
+  padding: 16px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.quick-actions button:nth-child(1) { background-color: #10b981; } /* 2 pts */
+.quick-actions button:nth-child(2) { background-color: #0ea5e9; } /* 3 pts */
+.quick-actions button:nth-child(3) { background-color: #f97316; } /* Rebote */
+.quick-actions button:nth-child(4) { background-color: #ef4444; } /* Pérdida */
+.quick-actions button:nth-child(5) { background-color: #8b5cf6; } /* Asistencia */
+.quick-actions button:nth-child(6) { background-color: #6b7280; } /* Faltas */
+
+/* Tablas */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 16px;
+}
+
+th, td {
+  padding: 12px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
   background-color: var(--primary);
   color: white;
 }
 
-button.danger {
-  background-color: var(--danger);
-  color: white;
+/* Mensajes */
+.alert {
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-weight: 500;
 }
 
-input, select, textarea {
-  width: 100%;
-  padding: 12px;
-  font-size: 18px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 12px;
+.alert-success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
-label {
-  font-weight: bold;
-  display: block;
-  margin-top: 12px;
+.alert-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
+/* Footer / enlaces */
 footer {
   text-align: center;
   margin-top: 30px;
+  padding-top: 20px;
+  color: var(--gray);
   font-size: 14px;
-  color: #6b7280;
+  border-top: 1px solid var(--border);
+}
+
+/* Evitar zoom en inputs (iOS) */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 18px !important;
+  }
 }

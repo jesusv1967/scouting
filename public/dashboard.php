@@ -4,100 +4,115 @@ require_once __DIR__ . '/../src/bootstrap.php';
 require_once __DIR__ . '/../src/db.php';
 require_login();
 ?>
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Dashboard - Scouting</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="<?=htmlspecialchars(url_asset('css/styles.css'))?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(url_asset('css/styles.css')) ?>">
   <style>
-    /* Opcional: un pequeño ajuste para que las tarjetas tengan el mismo aspecto */
-    .dashboard-card .card-body { display:flex; flex-direction:column; justify-content:space-between; height:100%; }
-    .dashboard-card .card-title { margin-bottom:.25rem; }
-    .dashboard-card .card-text { color: #6c757d; }
+    body {
+      padding: 16px 12px 24px;
+      background-color: var(--light);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .dashboard-grid {
+      display: grid;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    /* MÓVIL: 1 columna grande */
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px) {
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .dashboard-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 1400px) {
+      .dashboard-grid { grid-template-columns: repeat(5, 1fr); }
+    }
+
+    .dashboard-card {
+      display: block;
+      text-decoration: none;
+      color: var(--dark);
+      background: white;
+      border-radius: 20px;
+      padding: 36px 24px;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      border: 1px solid var(--border);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .dashboard-card:hover, .dashboard-card:focus {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .dashboard-card .icon {
+      font-size: 48px;
+      margin-bottom: 18px;
+      color: var(--primary);
+    }
+    .dashboard-card h3 {
+      font-size: 28px;                 /* ← ¡MÁS GRANDE! */
+      margin: 0 0 14px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--primary);
+    }
+    .dashboard-card p {
+      font-size: 20px;                 /* ← ¡MÁS GRANDE! */
+      line-height: 1.5;
+      color: var(--gray);
+      margin: 0;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
-<?php require_once __DIR__ . '/_nav.php'; ?>
+  <?php require_once __DIR__ . '/_nav.php'; ?>
 
-<main class="container py-4">
-  <h1 class="h4 mb-3">Dashboard</h1>
+  <main>
+    <h1 style="text-align: center; font-size: 34px; margin: 20px 0 32px; color: var(--primary); font-weight: 700;">
+      Dashboard
+    </h1>
 
-  <!--
-    Usamos row-cols para controlar cuántas columnas aparecen según el breakpoint:
-      - xs: 1 columna
-      - sm: 2 columnas
-      - md: 3 columnas (=> en portátil verás 3 + 2 si hay 5 tarjetas)
-      - lg+: 5 columnas (=> en pantallas grandes se muestran las 5 en una fila)
-    Ajusta row-cols-md / row-cols-lg si prefieres otro comportamiento.
-  -->
-  <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5">
-    <div class="col">
-      <a href="<?=htmlspecialchars(url('teams.php'))?>" class="card text-decoration-none text-dark h-100 dashboard-card">
-        <div class="card-body">
-          <div>
-            <h5 class="card-title">Equipos</h5>
-            <p class="card-text">Crear y listar equipos</p>
-          </div>
-          <div class="mt-2"><i class="bi bi-people" aria-hidden="true"></i></div>
-        </div>
+    <div class="dashboard-grid">
+      <a href="<?= htmlspecialchars(url('teams.php')) ?>" class="dashboard-card">
+        <div class="icon">👥</div>
+        <h3>Equipos</h3>
+        <p>Crear y listar equipos</p>
+      </a>
+
+      <a href="<?= htmlspecialchars(url('seasons.php')) ?>" class="dashboard-card">
+        <div class="icon">📅</div>
+        <h3>Temporadas</h3>
+        <p>Gestionar temporadas</p>
+      </a>
+
+      <a href="<?= htmlspecialchars(url('categories.php')) ?>" class="dashboard-card">
+        <div class="icon">🏷️</div>
+        <h3>Categorías</h3>
+        <p>Añadir categorías (ej. Senior, U18)</p>
+      </a>
+
+      <a href="<?= htmlspecialchars(url('add_match.php')) ?>" class="dashboard-card">
+        <div class="icon">➕</div>
+        <h3>Añadir partido</h3>
+        <p>Crear un nuevo partido</p>
+      </a>
+
+      <a href="<?= htmlspecialchars(url('matches.php')) ?>" class="dashboard-card">
+        <div class="icon">📋</div>
+        <h3>Partidos</h3>
+        <p>Ver, editar y eliminar partidos</p>
       </a>
     </div>
-
-    <div class="col">
-      <a href="<?=htmlspecialchars(url('seasons.php'))?>" class="card text-decoration-none text-dark h-100 dashboard-card">
-        <div class="card-body">
-          <div>
-            <h5 class="card-title">Temporadas</h5>
-            <p class="card-text">Gestionar temporadas</p>
-          </div>
-          <div class="mt-2"><i class="bi bi-calendar3" aria-hidden="true"></i></div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col">
-      <a href="<?=htmlspecialchars(url('categories.php'))?>" class="card text-decoration-none text-dark h-100 dashboard-card">
-        <div class="card-body">
-          <div>
-            <h5 class="card-title">Categorías</h5>
-            <p class="card-text">Añadir categorías (ej. Senior, U18)</p>
-          </div>
-          <div class="mt-2"><i class="bi bi-tags" aria-hidden="true"></i></div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col">
-      <a href="<?=htmlspecialchars(url('add_match.php'))?>" class="card text-decoration-none text-dark h-100 dashboard-card">
-        <div class="card-body">
-          <div>
-            <h5 class="card-title">Añadir partido</h5>
-            <p class="card-text">Crear un nuevo partido</p>
-          </div>
-          <div class="mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i></div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col">
-      <a href="<?=htmlspecialchars(url('matches.php'))?>" class="card text-decoration-none text-dark h-100 dashboard-card">
-        <div class="card-body">
-          <div>
-            <h5 class="card-title">Partidos</h5>
-            <p class="card-text">Ver, editar y eliminar partidos grabados</p>
-          </div>
-          <div class="mt-2"><i class="bi bi-journal-text" aria-hidden="true"></i></div>
-        </div>
-      </a>
-    </div>
-
-  </div>
-</main>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </main>
 </body>
 </html>
