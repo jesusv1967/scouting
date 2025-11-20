@@ -671,5 +671,108 @@ $csrf = csrf_token();
       });
     });
   </script>
+  <!-- Modal: Añadir jugador rápido -->
+<div id="add-player-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; padding:20px;">
+  <div style="background:white; border-radius:16px; padding:24px; max-width:500px; margin:40px auto;">
+    <h3 style="margin-top:0;">Añadir jugador</h3>
+    <p><strong>Equipo:</strong> <span id="modal-team-name">--</span></p>
+    <input type="hidden" id="modal-team-id">
+    <input type="text" id="modal-number" placeholder="Nº dorsal (obligatorio)" style="width:100%; padding:14px; font-size:18px; margin:12px 0; border:1px solid #ccc; border-radius:8px;">
+    <input type="text" id="modal-name" placeholder="Nombre (opcional)" style="width:100%; padding:14px; font-size:18px; margin:12px 0; border:1px solid #ccc; border-radius:8px;">
+    <div style="display:flex; gap:12px; margin-top:16px;">
+      <button id="modal-save" class="btn btn-primary" style="flex:1;">Añadir jugador</button>
+      <button id="modal-cancel" class="btn btn-secondary" style="flex:1;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Variables globales
+let currentTeamForModal = null;
+
+// Abrir modal desde botón "Añadir jugador"
+document.getElementById('add-home-player').addEventListener('click', () => {
+  const teamSelect = document.getElementById('home_team_id');
+  const teamId = teamSelect.value;
+  const teamName = teamSelect.options[teamSelect.selectedIndex]?.text || 'Local';
+  if (!teamId) {
+    alert('Selecciona primero el equipo local.');
+    return;
+  }
+  openAddPlayerModal(teamId, teamName);
+});
+
+document.getElementById('add-away-player').addEventListener('click', () => {
+  const teamSelect = document.getElementById('away_team_id');
+  const teamId = teamSelect.value;
+  const teamName = teamSelect.options[teamSelect.selectedIndex]?.text || 'Visitante';
+  if (!teamId) {
+    alert('Selecciona primero el equipo visitante.');
+    return;
+  }
+  openAddPlayerModal(teamId, teamName);
+});
+
+function openAddPlayerModal(teamId, teamName) {
+  currentTeamForModal = teamId;
+  document.getElementById('modal-team-id').value = teamId;
+  document.getElementById('modal-team-name').textContent = teamName;
+  document.getElementById('modal-number').value = '';
+  document.getElementById('modal-name').value = '';
+  document.getElementById('add-player-modal').style.display = 'block';
+}
+
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('add-player-modal').style.display = 'none';
+});
+
+document.getElementById('modal-save').addEventListener('click', async () => {
+  const number = document.getElementById('modal-number').value.trim();
+  const name = document.getElementById('modal-name').value.trim();
+  const teamId = document.getElementById('modal-team-id').value;
+
+  if (!number) {
+    alert('El número de dorsal es obligatorio.');
+    return;
+  }
+
+  try {
+    const res = await fetch('<?= htmlspecialchars(url('ajax_create_player.php')) ?>', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        team_id: teamId,
+        number: number,
+        name: name,
+        csrf_token: '<?= htmlspecialchars($csrf) ?>'
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      // Añadir opción al select del equipo correspondiente
+      const option = document.createElement('option');
+      option.value = data.player.id;
+      option.textContent = data.player.label;
+      
+      const isHome = (document.getElementById('home_team_id').value == teamId);
+      const selects = isHome
+        ? document.querySelectorAll('select[name="home_player_id[]"]')
+        : document.querySelectorAll('select[name="away_player_id[]"]');
+      
+      selects.forEach(sel => sel.appendChild(option.cloneNode(true)));
+
+      document.getElementById('add-player-modal').style.display = 'none';
+      alert('Jugador añadido correctamente.');
+    } else {
+      alert('Error: ' + (data.error || 'No se pudo crear el jugador.'));
+    }
+  } catch (e) {
+    alert('Error de conexión.');
+  }
+});
+</script>
+  
+  
 </body>
 </html>

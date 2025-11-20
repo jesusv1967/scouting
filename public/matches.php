@@ -199,7 +199,7 @@ $csrf = csrf_token();
             <th>Resultado</th>
             <th>Competición / Sede</th>
             <th>Notas</th>
-            <th>Creado por</th>
+            <th>Scouting</th>
             <th class="text-end">Acciones</th>
           </tr>
         </thead>
@@ -236,6 +236,7 @@ $csrf = csrf_token();
               $away_title = htmlspecialchars(implode(', ', $away_starters));
             ?>
             <tr class="match-row" data-match-id="<?= $mid ?>">
+
               <td style="white-space:nowrap;min-width:110px;">
                 <?=htmlspecialchars(date('Y-m-d H:i', strtotime($m['date'])))?>
                 <div><small class="text-muted"><?=htmlspecialchars($m['season_name'] ?? '')?></small></div>
@@ -305,8 +306,12 @@ $csrf = csrf_token();
 
               <td class="notes"><?=htmlspecialchars($m['notes'] ?? '')?></td>
 
-              <td><?=htmlspecialchars($m['creator'] ?? '-')?></td>
-
+              
+	<td>
+  <a href="<?= htmlspecialchars(url('scouting.php?match_id=' .$mid )) ?>" class="btn btn-sm btn-success">
+    🏀 Scouting
+  </a>
+</td>
               <td class="text-end">
                 <a href="<?=htmlspecialchars(url('add_match.php') . '?id=' . $m['id'])?>" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil"></i></a>
 
