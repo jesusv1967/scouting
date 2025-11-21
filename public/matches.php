@@ -131,6 +131,13 @@ $csrf = csrf_token();
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link rel="stylesheet" href="<?=htmlspecialchars(url_asset('css/styles.css'))?>">
   <style>
+  @media (max-width: 575px) {
+  .touch-btn {
+    min-width: 90px;
+    font-size: 0.85rem;
+    padding: 6px 8px;
+  }
+}
     /* Touch-friendly / responsive tweaks */
     .score-badge {
       font-weight:700;
@@ -194,12 +201,12 @@ $csrf = csrf_token();
         <thead>
           <tr>
             <th>Fecha</th>
-            <th>Temporada / Categoría</th>
-            <th>Local - Visitante</th>
+			<th>Local - Visitante</th>
             <th>Resultado</th>
+			<th>Scouting</th>
+            <th>Temporada / Categoría</th>
             <th>Competición / Sede</th>
-            <th>Notas</th>
-            <th>Scouting</th>
+            
             <th class="text-end">Acciones</th>
           </tr>
         </thead>
@@ -242,11 +249,7 @@ $csrf = csrf_token();
                 <div><small class="text-muted"><?=htmlspecialchars($m['season_name'] ?? '')?></small></div>
               </td>
 
-              <td>
-                <div><?=htmlspecialchars($m['season_name'] ?? '-')?></div>
-                <div><small class="text-muted"><?=htmlspecialchars($m['category_name'] ?? '-')?></small></div>
-              </td>
-
+            
               <td style="min-width:190px;">
                 <div>
                   <strong><?=htmlspecialchars($m['home_name'] ?? '—')?></strong>
@@ -298,20 +301,23 @@ $csrf = csrf_token();
                 ?>
                 <div class="score-badge <?= $badgeClass ?>"><?=htmlspecialchars($scoreText)?></div>
               </td>
+	<td>
+  <a href="<?= htmlspecialchars(url('scouting.php?match_id=' .$mid )) ?>" class="btn btn-sm btn-success">
+    🏀 Scouting
+  </a>
+</td>
+  <td>
+                <div><?=htmlspecialchars($m['season_name'] ?? '-')?></div>
+                <div><small class="text-muted"><?=htmlspecialchars($m['category_name'] ?? '-')?></small></div>
+              </td>
 
               <td>
                 <div><?=htmlspecialchars($m['competition'] ?: '-')?></div>
                 <div><small class="text-muted"><?=htmlspecialchars($m['venue'] ?: '-')?></small></div>
               </td>
 
-              <td class="notes"><?=htmlspecialchars($m['notes'] ?? '')?></td>
-
               
-	<td>
-  <a href="<?= htmlspecialchars(url('scouting.php?match_id=' .$mid )) ?>" class="btn btn-sm btn-success">
-    🏀 Scouting
-  </a>
-</td>
+
               <td class="text-end">
                 <a href="<?=htmlspecialchars(url('add_match.php') . '?id=' . $m['id'])?>" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil"></i></a>
 
@@ -370,18 +376,27 @@ $csrf = csrf_token();
               </div>
             </div>
 
-            <div class="text-end ms-3">
-              <?php
-                $badgeClass = 'bg-secondary text-white';
-                if ($winner === 'home') $badgeClass = 'bg-success text-white';
-                elseif ($winner === 'away') $badgeClass = 'bg-danger text-white';
-                elseif ($winner === 'tie') $badgeClass = 'bg-info text-white';
-              ?>
-              <div class="score-badge <?= $badgeClass ?>"><?=htmlspecialchars($scoreText)?></div>
-              <div class="mt-2">
-                <a class="btn btn-sm btn-outline-primary touch-btn d-inline-block" href="<?=htmlspecialchars(url('add_match.php') . '?id=' . $m['id'])?>">Editar</a>
-              </div>
-            </div>
+          <div class="text-end ms-3">
+		  <?php
+			$badgeClass = 'bg-secondary text-white';
+			if ($winner === 'home') $badgeClass = 'bg-success text-white';
+			elseif ($winner === 'away') $badgeClass = 'bg-danger text-white';
+			elseif ($winner === 'tie') $badgeClass = 'bg-info text-white';
+		  ?>
+		  <div class="score-badge <?= $badgeClass ?>"><?=htmlspecialchars($scoreText)?></div>
+		  
+		  <!-- BOTÓN DE SCOUTING (móvil) -->
+		  <div class="mt-2">
+			<a href="<?= htmlspecialchars(url('scouting.php?match_id=' . $mid)) ?>" class="btn btn-sm btn-success touch-btn d-inline-block">
+			  🏀 Scouting
+			</a>
+		  </div>
+		  
+		  <!-- BOTÓN DE EDITAR -->
+		  <div class="mt-2">
+			<a class="btn btn-sm btn-outline-primary touch-btn d-inline-block" href="<?=htmlspecialchars(url('add_match.php') . '?id=' . $m['id'])?>">Editar</a>
+		  </div>
+		</div>
           </div>
         </div>
       <?php endforeach; ?>

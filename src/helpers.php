@@ -3,6 +3,22 @@
 // Helpers varios: sesión segura, CSRF, flash messages, login check.
 // NOTA: ya no arrancamos session_start() inmediatamente aquí; use secure_session_start().
 
+function url(string $path = ''): string {
+    // Detecta el directorio base desde la URL actual
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    $basePath = rtrim(dirname($scriptName), '/');
+    if ($basePath === '/') {
+        $basePath = '';
+    }
+    return $basePath . '/' . ltrim($path, '/');
+}
+
+function url_asset(string $path): string {
+    // Usa la misma base que url(), pero añade /assets
+    return rtrim(url(''), '/') . '/assets/' . ltrim($path, '/');
+}
+
+
 function secure_session_start($config = []) {
     $secure = $config['session_cookie_secure'] ?? false;
     $httponly = true;

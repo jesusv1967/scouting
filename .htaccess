@@ -1,0 +1,9 @@
+# Bloquear acceso directo a carpetas sensibles
+RewriteEngine On
+
+# Redirigir todas las peticiones a /public/ (si no puedes cambiar DocumentRoot)
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ /public/$1 [L,QSA]
+
+# Opcional: evitar listar directorios
+Options -Indexes

@@ -8,12 +8,25 @@ require_login();
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  
+  
+  
+  
   <title>Dashboard - Scouting</title>
   <link rel="stylesheet" href="<?= htmlspecialchars(url_asset('css/styles.css')) ?>">
+  
+  
+  
+  
+  
+  
   <style>
     body {
-      padding: 16px 12px 24px;
+      padding: 0 12px 24px;
       background-color: var(--light);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
@@ -23,19 +36,10 @@ require_login();
       max-width: 1200px;
       margin: 0 auto;
     }
-    /* MÓVIL: 1 columna grande */
-    .dashboard-grid {
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 768px) {
-      .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (min-width: 1024px) {
-      .dashboard-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (min-width: 1400px) {
-      .dashboard-grid { grid-template-columns: repeat(5, 1fr); }
-    }
+    .dashboard-grid { grid-template-columns: 1fr; }
+    @media (min-width: 768px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1400px) { .dashboard-grid { grid-template-columns: repeat(5, 1fr); } }
 
     .dashboard-card {
       display: block;
@@ -59,23 +63,27 @@ require_login();
       color: var(--primary);
     }
     .dashboard-card h3 {
-      font-size: 28px;                 /* ← ¡MÁS GRANDE! */
+      font-size: 28px;
       margin: 0 0 14px;
       font-weight: 700;
       line-height: 1.3;
       color: var(--primary);
     }
     .dashboard-card p {
-      font-size: 20px;                 /* ← ¡MÁS GRANDE! */
+      font-size: 20px;
       line-height: 1.5;
       color: var(--gray);
       margin: 0;
       font-weight: 500;
     }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
   </style>
 </head>
 <body>
-  <?php require_once __DIR__ . '/_nav.php'; ?>
+<?php require_once __DIR__ . '/_nav.php'; ?>
 
   <main>
     <h1 style="text-align: center; font-size: 34px; margin: 20px 0 32px; color: var(--primary); font-weight: 700;">

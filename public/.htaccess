@@ -1,0 +1,4 @@
+RewriteEngine On
+
+# Tu función `url()` debe generar rutas como /login.php, no relativas
+# Esto evita errores si usas rutas relativas en formularios o AJAX

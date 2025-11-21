@@ -1,5 +1,5 @@
 <?php
-// public/scouting.php — Scouting cualitativo final con ✔️ y toggle
+// public/scouting.php — Scouting cualitativo final con ✔️, toggle y gestión de jugadores
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once __DIR__ . '/../src/db.php';
 require_login();
@@ -92,7 +92,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     }
     .dorsal-btn {
       padding: 14px 0;
-      font-size: 20px;
+      font-size: 28px;
       background: #222;
       color: white;
       border: 1px solid #444;
@@ -100,6 +100,44 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       cursor: pointer;
     }
     .dorsal-btn.active { background: #2563eb; border-color: #1d4ed8; }
+
+    .dorsal-input-area {
+      margin-bottom: 16px;
+    }
+    .dorsal-input {
+      width: 100%;
+      padding: 16px;
+      font-size: 28px;
+      text-align: center;
+      border: 2px solid #444;
+      border-radius: 14px;
+      background: #222;
+      color: white;
+      margin-bottom: 10px;
+    }
+    .add-player-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 28px;
+      font-weight: bold;
+      background: #6b7280;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    .delete-player-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 28px;
+      font-weight: bold;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
 
     .accordion {
       margin-bottom: 16px;
@@ -110,7 +148,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     .accordion-header {
       padding: 14px;
       background: #222;
-      font-size: 20px;
+      font-size: 30px;
       font-weight: bold;
       cursor: pointer;
       display: flex;
@@ -130,36 +168,42 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
     }
-    .note-btn {
-      padding: 16px;
-      font-size: 18px;
-      border: 2px solid #555;
-      border-radius: 12px;
-      color: white;
-      background: #333;
-      cursor: pointer;
-      text-align: left;
-      position: relative;
-    }
+	.note-btn {
+	  padding: 24px 20px;
+	  font-size: 30px;          /* ↑ más grande */
+	  line-height: 1.3;
+	  border: 2px solid #555;
+	  border-radius: 14px;
+	  color: white;
+	  background: #333;
+	  cursor: pointer;
+	  text-align: left;
+	  position: relative;
+	  min-height: 90px;         /* asegura altura mínima incluso con texto corto */
+	  display: flex;
+	  flex-direction: column;
+	  justify-content: center;
+	}
     .note-btn.active {
       border-color: #fff;
       background: #444;
     }
-    .note-btn .check {
-      display: none;
-      position: absolute;
-      top: 8px;
-      right: 10px;
-      font-size: 24px;
-      color: #4ade80;
-      font-weight: bold;
-    }
-    .note-btn.active .check { display: block; }
+ 
+	.note-btn .check {
+	  display: none;
+	  position: absolute;
+	  top: 12px;
+	  right: 14px;
+	  font-size: 28px;          /* ↑ más grande */
+	  color: #4ade80;
+	  font-weight: bold;
+	}
+	 .note-btn.active .check { display: block; }
 
     #free-note-input {
       width: 100%;
       padding: 14px;
-      font-size: 18px;
+      font-size: 26px;
       border-radius: 12px;
       border: 1px solid #444;
       background: #222;
@@ -177,30 +221,28 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       overflow: auto;
       color: #ccc;
     }
-	
-	.back-to-app-btn {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  background: #2563eb;
-  color: white;
-  text-decoration: none;
-  padding: 8px 14px;
-  border-radius: 12px;
-  font-weight: bold;
-  font-size: 18px;
-  z-index: 100;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-.back-to-app-btn:hover {
-  background: #1d4ed8;
-}
-
+    
+    .back-to-app-btn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 26px;
+      z-index: 100;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .back-to-app-btn:hover {
+      background: #1d4ed8;
+    }
   </style>
 </head>
 <body>
 <a href="<?= htmlspecialchars(url('matches.php')) ?>" class="back-to-app-btn">⬅️ Partidos</a>
-  
 
   <div class="team-selector">
     <button class="team-btn active" data-team="home"><?= $home_name ?></button>
@@ -208,6 +250,13 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
   </div>
 
   <div class="dorsal-buttons" id="dorsal-buttons"></div>
+
+  <!-- Área para añadir/eliminar jugadores -->
+  <div class="dorsal-input-area">
+    <input type="text" id="dorsal-new" class="dorsal-input" placeholder="Nº nuevo (ej. 25)" inputmode="numeric" autocomplete="off">
+    <button id="add-player-btn" class="add-player-btn">➕ Añadir jugador</button>
+    <button id="delete-player-btn" class="delete-player-btn">🗑️ Eliminar jugador</button>
+  </div>
 
   <div class="accordion active" data-category="mano">
     <div class="accordion-header">
@@ -260,7 +309,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     </div>
     <div class="accordion-content">
       <textarea id="free-note-input" placeholder="Escribe tu observación..."></textarea>
-      <button id="save-note-btn" style="width:100%; padding:14px; font-size:18px; margin-top:12px; background:#10b981; color:white; border:none; border-radius:12px;">✅ Guardar nota</button>
+      <button id="save-note-btn" style="width:100%; padding:14px; font-size:28px; margin-top:12px; background:#10b981; color:white; border:none; border-radius:12px;">✅ Guardar nota</button>
     </div>
   </div>
 
@@ -307,17 +356,116 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
         btn.onclick = () => {
           document.querySelectorAll('.dorsal-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          selectPlayer(num);
+          currentDorsal = num;
         };
         dorsalButtons.appendChild(btn);
       });
     }
 
-    // --- Seleccionar jugador y cargar observaciones ---
-    async function selectPlayer(dorsal) {
-      currentDorsal = dorsal;
+    // --- Cambio de equipo ---
+    document.querySelectorAll('.team-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.team-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTeam = btn.dataset.team;
+        renderDorsalButtons(currentTeam);
+        currentDorsal = '';
+        document.querySelectorAll('.dorsal-btn').forEach(b => b.classList.remove('active'));
+        currentObservations = { mano: null, ataque: [], defensa: [], nota: '' };
+        noteInput.value = '';
+      });
+    });
+
+    // --- Añadir jugador ---
+    document.getElementById('add-player-btn').addEventListener('click', async () => {
+      const dorsal = document.getElementById('dorsal-new').value.trim();
+      if (!dorsal) {
+        alert('Introduce un número de dorsal.');
+        return;
+      }
+      const teamId = currentTeam === 'home' ? homeTeamId : awayTeamId;
+      
       try {
-        const res = await fetch(`get_observations.php?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(dorsal)}`);
+        const res = await fetch('<?= htmlspecialchars(url('ajax_create_player.php')) ?>', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            team_id: teamId,
+            number: dorsal,
+            name: '',
+            match_id: matchId,
+            csrf_token: '<?= csrf_token() ?>'
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (currentTeam === 'home') {
+            if (!homeDorsales.includes(dorsal)) homeDorsales.push(dorsal);
+            homeDorsales.sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
+          } else {
+            if (!awayDorsales.includes(dorsal)) awayDorsales.push(dorsal);
+            awayDorsales.sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
+          }
+          renderDorsalButtons(currentTeam);
+          document.getElementById('dorsal-new').value = '';
+          currentDorsal = dorsal;
+          log.innerHTML = `✅ Jugador ${dorsal} añadido.<br>` + log.innerHTML;
+        } else {
+          alert('Error: ' + (data.error || ''));
+        }
+      } catch (e) {
+        alert('Error de red');
+      }
+    });
+
+    // --- Eliminar jugador ---
+    document.getElementById('delete-player-btn').addEventListener('click', async () => {
+      if (!currentDorsal) {
+        alert('Selecciona un jugador primero.');
+        return;
+      }
+      if (!confirm(`¿Eliminar al jugador ${currentDorsal} del equipo ${currentTeam === 'home' ? homeName : awayName}?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('<?= htmlspecialchars(url('ajax_delete_player_from_match.php')) ?>', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            match_id: matchId,
+            dorsal: currentDorsal,
+            team: currentTeam,
+            csrf_token: '<?= csrf_token() ?>'
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          // Eliminar del array local
+          if (currentTeam === 'home') {
+            const idx = homeDorsales.indexOf(currentDorsal);
+            if (idx !== -1) homeDorsales.splice(idx, 1);
+          } else {
+            const idx = awayDorsales.indexOf(currentDorsal);
+            if (idx !== -1) awayDorsales.splice(idx, 1);
+          }
+          renderDorsalButtons(currentTeam);
+          const dorsalToDelete = currentDorsal;
+          currentDorsal = '';
+          log.innerHTML = `🗑️ Jugador ${dorsalToDelete} eliminado.<br>` + log.innerHTML;
+        } else {
+          alert('Error: ' + (data.error || ''));
+        }
+      } catch (e) {
+        alert('Error de red');
+      }
+    });
+
+    // --- Seleccionar jugador y cargar observaciones ---
+    async function loadObservations() {
+      if (!currentDorsal) return;
+      try {
+        const res = await fetch(`<?= htmlspecialchars(url('get_observations.php')) ?>?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(currentDorsal)}`);
         const obs = await res.json();
         currentObservations = { mano: null, ataque: [], defensa: [], nota: '' };
         obs.forEach(o => {
@@ -362,21 +510,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       });
     }
 
-    // --- Cambio de equipo ---
-    document.querySelectorAll('.team-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.team-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTeam = btn.dataset.team;
-        renderDorsalButtons(currentTeam);
-        currentDorsal = '';
-        document.querySelectorAll('.dorsal-btn').forEach(b => b.classList.remove('active'));
-        currentObservations = { mano: null, ataque: [], defensa: [], nota: '' };
-        noteInput.value = '';
-      });
-    });
-
-    // --- Manejo de clics en botones ---
+    // --- Manejo de clics en botones de observación ---
     document.querySelectorAll('.note-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!currentDorsal) {
@@ -388,12 +522,10 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
         let logText = '';
 
         if (category === 'mano') {
-          // Sobrescribe
           currentObservations.mano = value;
           logText = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → Mano: ${btn.textContent.replace('✔', '').trim()}`;
           await saveObservation(category, value, logText);
         } else if (category === 'ataque' || category === 'defensa') {
-          // Toggle
           const idx = currentObservations[category].indexOf(value);
           if (idx === -1) {
             currentObservations[category].push(value);
@@ -423,7 +555,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     async function saveObservation(category, value, logText) {
       log.innerHTML = logText + '<br>' + log.innerHTML;
       try {
-        await fetch('save_observation.php', {
+        await fetch('<?= htmlspecialchars(url('save_observation.php')) ?>', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -443,7 +575,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     async function deleteObservation(category, value, logText) {
       log.innerHTML = logText + '<br>' + log.innerHTML;
       try {
-        await fetch('delete_observation.php', {
+        await fetch('<?= htmlspecialchars(url('delete_observation.php')) ?>', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -462,6 +594,13 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
 
     // --- Inicio ---
     renderDorsalButtons('home');
+    
+    // Cargar observaciones cuando se selecciona un jugador
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('dorsal-btn')) {
+        loadObservations();
+      }
+    });
   </script>
 </body>
 </html>

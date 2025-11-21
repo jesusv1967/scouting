@@ -4,6 +4,7 @@
 
 // Cargar configuración
 $config = require __DIR__ . '/config.php';
+require_once __DIR__ . '/../src/helpers.php';
 
 // Calcular BASE_URL dinámicamente:
 // dirname($_SERVER['SCRIPT_NAME']) -> por ejemplo "/scouting/public" o "/" si public es document root
@@ -15,12 +16,13 @@ if ($base === '/' || $base === '\\') {
 define('BASE_URL', $base);
 
 // Helper para construir URLs (sin doble slash)
+/*
 function url(string $path = ''): string {
     $path = ltrim($path, '/');
     if ($path === '') return BASE_URL === '' ? '/' : BASE_URL . '/';
     return (BASE_URL === '' ? '/' : BASE_URL . '/') . $path;
 }
-
+*/
 // Detectar ubicación de la carpeta assets en el árbol de ficheros (fallback inteligente)
 // project root (un nivel arriba de src)
 $projectRoot = realpath(__DIR__ . '/..');
@@ -47,14 +49,14 @@ elseif (is_dir($rootAssetsPath)) {
 }
 // Define constante usable en templates
 define('ASSETS_URL', rtrim($assetsUrl, '/'));
-
+/*
 // Helper para construir rutas a assets (css/js/img)
 function url_asset(string $path = ''): string {
     $path = ltrim($path, '/');
     // ASSETS_URL ya incluye /assets y no termina en slash
     return ASSETS_URL . '/' . $path;
 }
-
+*/
 // Iniciar sesión segura según config
 require_once __DIR__ . '/helpers.php';
 secure_session_start($config);

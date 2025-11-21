@@ -1,4 +1,7 @@
 <?php
+
+
+
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once __DIR__ . '/../src/auth.php';
 
@@ -85,12 +88,10 @@ $csrf = csrf_token();
   </style>
 </head>
 <body>
-  <div class="login-card">
-    <div class="text-center mb-4">
-      <img src="<?= htmlspecialchars(url_asset('img/logo.svg')) ?>" alt="Logo" style="height: 80px; margin: 0 auto 20px;">
-    </div>
 
-    <h2 class="text-center">Iniciar sesión</h2>
+  <div class="login-card">
+  
+    <h2 class="text-center">SCOUTING - Iniciar sesión</h2>
 
     <?php if ($error): ?>
       <div class="alert alert-error" style="font-size: 18px; padding: 14px; margin-bottom: 20px;">
@@ -107,14 +108,16 @@ $csrf = csrf_token();
       <label for="password" style="display: block; font-size: 18px; margin: 16px 0 8px; font-weight: 600;">Contraseña</label>
       <input id="password" name="password" type="password" required style="width: 100%; font-size: 20px; padding: 16px; border: 1px solid var(--border); border-radius: 12px;">
 
-      <button type="submit" class="primary" style="width: 100%; font-size: 22px; padding: 18px; margin-top: 24px; border-radius: 12px;">
+      <button type="submit" class="primary" style="width: 100%; font-size: 22px; padding: 18px; margin-top: 4px; border-radius: 12px;">
         Entrar
       </button>
     </form>
-
-    <div style="text-align: center; margin-top: 28px; color: var(--gray); font-size: 14px;">
-      App MVP — versión inicial
-    </div>
+<footer style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea; font-size: 14px; color: #6c757d;">
+  &copy; <?= date('Y') ?> Jesús Contreras. Todos los derechos reservados.<br>
+  <a href="mailto:jesus@inteleksys.es" style="color: #1e3a8a; text-decoration: none;">Contacto</a>
+</footer>
   </div>
+
+
 </body>
 </html>

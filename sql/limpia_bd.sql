@@ -1,43 +1,37 @@
+-- Archivo: sql/limpia_datos_reales.sql
+-- Borra TODOS los datos de partidos, jugadores, temporadas, etc., pero mantiene:
+-- - la estructura de las tablas
+-- - el usuario admin (si su id = 1)
 
+-- 1. Borra observaciones cualitativas de scouting
+DELETE FROM match_player_observations;
 
--- Desactivar temporalmente comprobaciones de FK
-SET FOREIGN_KEY_CHECKS = 0;
+-- 2. Borra eventos antiguos (si usaste match_events en pruebas)
+DELETE FROM match_events;
 
--- Borrar datos dependientes (orden pensado para evitar violaciones FK)
--- Ajusta si tu esquema tiene otras tablas dependientes
-DELETE FROM match_players WHERE 1;
-DELETE FROM match_media WHERE 1;
-DELETE FROM matches WHERE 1;
+-- 3. Borra medios adjuntos y su relación con partidos
+DELETE FROM match_media;
 
-DELETE FROM players WHERE 1;
-DELETE FROM teams WHERE 1;
-DELETE FROM seasons WHERE 1;
-DELETE FROM categories WHERE 1;
+-- 4. Borra jugadores asociados a partidos
+DELETE FROM match_players;
 
--- Si tienes otras tablas relacionadas (por ejemplo events, stats, etc.), añádelas aquí:
--- DELETE FROM events WHERE 1;
--- DELETE FROM player_stats WHERE 1;
+-- 5. Borra partidos
+DELETE FROM matches;
 
+-- 6. Borra jugadores (solo si no los quieres conservar)
+DELETE FROM players;
 
--- Reiniciar AUTO_INCREMENT para tablas limpias (opcional)
-ALTER TABLE matches AUTO_INCREMENT = 1;
-ALTER TABLE match_players AUTO_INCREMENT = 1;
-ALTER TABLE match_media AUTO_INCREMENT = 1;
-ALTER TABLE players AUTO_INCREMENT = 1;
-ALTER TABLE teams AUTO_INCREMENT = 1;
-ALTER TABLE seasons AUTO_INCREMENT = 1;
-ALTER TABLE categories AUTO_INCREMENT = 1;
+-- 7. Borra equipos (si quieres empezar de cero)
+DELETE FROM teams;
 
--- Reactivar FK checks
-SET FOREIGN_KEY_CHECKS = 1;
+-- 8. Borra categorías
+DELETE FROM categories;
 
--- Resultado: mostrar recuentos por tabla tras limpieza
-SELECT 
-  (SELECT COUNT(*) FROM users) AS users_count,
-  (SELECT COUNT(*) FROM matches) AS matches_count,
-  (SELECT COUNT(*) FROM match_players) AS match_players_count,
-  (SELECT COUNT(*) FROM match_media) AS match_media_count,
-  (SELECT COUNT(*) FROM players) AS players_count,
-  (SELECT COUNT(*) FROM teams) AS teams_count,
-  (SELECT COUNT(*) FROM seasons) AS seasons_count,
-  (SELECT COUNT(*) FROM categories) AS categories_count;
+-- 9. Borra temporadas
+DELETE FROM seasons;
+
+-- 10. Opcional: si quieres conservar tu usuario admin (id=1), no toques users
+-- Si quieres borrar todos los usuarios excepto el admin:
+-- DELETE FROM users WHERE id != 1;
+
+-- ⚠️ Importante: las tablas se mantienen, solo se limpian los datos.
