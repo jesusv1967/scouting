@@ -89,8 +89,20 @@ require_login();
     <h1 style="text-align: center; font-size: 34px; margin: 20px 0 32px; color: var(--primary); font-weight: 700;">
       Dashboard
     </h1>
-
-    <div class="dashboard-grid">
+<div class="dashboard-grid">
+      <a href="<?= htmlspecialchars(url('matches.php')) ?>" class="dashboard-card">
+        <div class="icon">📋</div>
+        <h3>Partidos</h3>
+        <p>Ver, editar y eliminar partidos</p>
+      </a>
+      <a href="<?= htmlspecialchars(url('add_match.php')) ?>" class="dashboard-card">
+        <div class="icon">➕</div>
+        <h3>Añadir partido</h3>
+        <p>Crear un nuevo partido</p>
+      </a>
+	  
+	  
+    
       <a href="<?= htmlspecialchars(url('teams.php')) ?>" class="dashboard-card">
         <div class="icon">👥</div>
         <h3>Equipos</h3>
@@ -109,17 +121,7 @@ require_login();
         <p>Añadir categorías (ej. Senior, U18)</p>
       </a>
 
-      <a href="<?= htmlspecialchars(url('add_match.php')) ?>" class="dashboard-card">
-        <div class="icon">➕</div>
-        <h3>Añadir partido</h3>
-        <p>Crear un nuevo partido</p>
-      </a>
 
-      <a href="<?= htmlspecialchars(url('matches.php')) ?>" class="dashboard-card">
-        <div class="icon">📋</div>
-        <h3>Partidos</h3>
-        <p>Ver, editar y eliminar partidos</p>
-      </a>
     </div>
   </main>
 </body>
