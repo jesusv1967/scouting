@@ -63,7 +63,7 @@ require_login();
       color: var(--primary);
     }
     .dashboard-card h3 {
-      font-size: 28px;
+      font-size: 38px;
       margin: 0 0 14px;
       font-weight: 700;
       line-height: 1.3;
