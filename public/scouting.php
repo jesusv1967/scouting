@@ -1,5 +1,5 @@
 <?php
-// public/scouting.php — Scouting cualitativo final y corregido
+// public/scouting.php — Scouting cualitativo con soporte offline
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once __DIR__ . '/../src/db.php';
 require_login();
@@ -66,6 +66,19 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       background: #111;
       border-radius: 16px;
       margin-bottom: 16px;
+    }
+    .offline-badge {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      background: #dc2626;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+      z-index: 200;
+      display: none;
     }
     .team-selector {
       display: flex;
@@ -257,6 +270,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
   </style>
 </head>
 <body>
+<div class="offline-badge" id="offline-badge">💾 Datos pendientes</div>
 <a href="<?= htmlspecialchars(url('matches.php')) ?>" class="back-to-app-btn">⬅️ Partidos</a>
 <a href="<?= htmlspecialchars(url('match_notes.php?match_id=' . $match_id)) ?>" class="team-notes-btn">📝 Equipo</a>
 
@@ -272,12 +286,14 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     <button id="add-player-btn" class="add-player-btn">➕ Añadir jugador</button>
     <button id="delete-player-btn" class="delete-player-btn">🗑️ Eliminar jugador</button>
   </div>
-	<!-- Botón para marcar como titular -->
-	<div style="text-align: center; margin: 20px 0;">
-	  <button id="toggle-starter-btn" style="padding: 14px 24px; font-size: 22px; font-weight: bold; border: none; border-radius: 12px; background: #6b7280; color: white; cursor: pointer;">
-		👕 Marcar como titular
-	  </button>
-	</div>
+
+
+  <!-- Botón para titular -->
+  <div style="text-align: center; margin: 20px 0;">
+    <button id="toggle-starter-btn" style="padding: 14px 24px; font-size: 22px; font-weight: bold; border: none; border-radius: 12px; background: #6b7280; color: white; cursor: pointer;">
+      👕 Marcar como titular
+    </button>
+  </div>
 
   <div class="accordion active" data-category="mano">
     <div class="accordion-header">
@@ -317,7 +333,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       <div class="note-buttons">
         <button class="note-btn" data-category="ataque" data-value="bienTL">🏀 Bien TL<span class="check">✔</span></button>
         <button class="note-btn" data-category="ataque" data-value="tira_bien2">🎯 Tira de 2<span class="check">✔</span></button>
-        <button class="note-btn" data-category="ataque" data-value="tira_bien3">🏀 Tira de 3<span class="check">✔</span></button>
+        <button class="note-btn" data-category="ataque" data-value="pasa_bien3">🏀 Tira de 3<span class="check">✔</span></button>
         <button class="note-btn" data-category="ataque" data-value="penetra">🏀 Penetra bien<span class="check">✔</span></button>
         <button class="note-btn" data-category="ataque" data-value="corre_ca">🏃‍♂️ Corre CA<span class="check">✔</span></button>
         <button class="note-btn" data-category="ataque" data-value="pasa_bien">🤲 Pasa bien<span class="check">✔</span></button>
@@ -381,6 +397,64 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
   <div class="log" id="event-log">Tus observaciones aparecerán aquí...</div>
 
   <script>
+    // === OFFLINE SUPPORT ===
+    const offlineBadge = document.getElementById('offline-badge');
+
+    function showOfflineBadge() {
+      offlineBadge.style.display = 'block';
+    }
+
+    function hideOfflineBadge() {
+      offlineBadge.style.display = 'none';
+    }
+
+    function getPendingObservations() {
+      return JSON.parse(localStorage.getItem('pending_observations') || '[]');
+    }
+
+    function savePendingObservations(pending) {
+      localStorage.setItem('pending_observations', JSON.stringify(pending));
+      if (pending.length > 0) {
+        showOfflineBadge();
+      } else {
+        hideOfflineBadge();
+      }
+    }
+
+    async function syncPendingObservations() {
+      const pending = getPendingObservations();
+      if (pending.length === 0) return;
+
+      for (let obs of pending) {
+        try {
+          const response = await fetch('<?= htmlspecialchars(url('save_observation.php')) ?>', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(obs)
+          });
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+        } catch (e) {
+          // Si falla uno, paramos y guardamos el resto
+          savePendingObservations(pending);
+          return;
+        }
+      }
+
+      // Todo enviado
+      savePendingObservations([]);
+    }
+
+    // Detectar conexión y sincronizar
+    window.addEventListener('online', syncPendingObservations);
+    window.addEventListener('load', () => {
+      if (navigator.onLine) {
+        syncPendingObservations();
+      } else {
+        showOfflineBadge();
+      }
+    });
+
+    // === RESTO DEL CÓDIGO (igual que antes) ===
     const matchId = <?= (int)$match_id ?>;
     const homeTeamId = <?= (int)$match['home_team_id'] ?>;
     const awayTeamId = <?= (int)$match['away_team_id'] ?>;
@@ -388,9 +462,10 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     const awayDorsales = <?= json_encode($away_dorsales) ?>;
     const homeName = <?= json_encode($home_name) ?>;
     const awayName = <?= json_encode($away_name) ?>;
-	let currentIsStarter = false;
+
     let currentTeam = 'home';
     let currentDorsal = '';
+    let currentIsStarter = false;
     let currentObservations = { 
       mano: null, 
       interior: null,
@@ -430,6 +505,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
           document.querySelectorAll('.dorsal-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           currentDorsal = num;
+          loadObservations(); // Cargar al seleccionar
         };
         dorsalButtons.appendChild(btn);
       });
@@ -453,7 +529,9 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
           habilidad: [], 
           nota: '' 
         };
+        currentIsStarter = false;
         noteInput.value = '';
+        updateStarterButton();
       });
     });
 
@@ -541,59 +619,60 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       }
     });
 
-//Carga Observaciones
-	 async function loadObservations() {
-	  if (!currentDorsal) return;
-	  try {
-		// Cargar observaciones cualitativas
-		const resObs = await fetch(`<?= htmlspecialchars(url('get_observations.php')) ?>?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(currentDorsal)}`);
-		const obs = await resObs.json();
-		currentObservations = { 
-		  mano: null, 
-		  interior: null,
-		  ataque: [], 
-		  defensa: [], 
-		  rebote: [], 
-		  habilidad: [], 
-		  nota: '' 
-		};
-		obs.forEach(o => {
-		  if (o.category === 'nota') {
-			currentObservations.nota = o.value;
-		  } else if (o.category === 'mano' || o.category === 'interior') {
-			currentObservations[o.category] = o.value;
-		  } else if (['ataque','defensa','rebote','habilidad'].includes(o.category)) {
-			if (!Array.isArray(currentObservations[o.category])) {
-			  currentObservations[o.category] = [];
-			}
-			currentObservations[o.category].push(o.value);
-		  }
-		});
-		noteInput.value = currentObservations.nota;
-		updateButtonStates();
+    // --- Cargar observaciones y titular ---
+    async function loadObservations() {
+      if (!currentDorsal) return;
+      try {
+        // Cargar observaciones
+        const resObs = await fetch(`<?= htmlspecialchars(url('get_observations.php')) ?>?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(currentDorsal)}`);
+        const obs = await resObs.json();
+        currentObservations = { 
+          mano: null, 
+          interior: null,
+          ataque: [], 
+          defensa: [], 
+          rebote: [], 
+          habilidad: [], 
+          nota: '' 
+        };
+        obs.forEach(o => {
+          if (o.category === 'nota') {
+            currentObservations.nota = o.value;
+          } else if (o.category === 'mano' || o.category === 'interior') {
+            currentObservations[o.category] = o.value;
+          } else if (['ataque','defensa','rebote','habilidad'].includes(o.category)) {
+            if (!Array.isArray(currentObservations[o.category])) {
+              currentObservations[o.category] = [];
+            }
+            currentObservations[o.category].push(o.value);
+          }
+        });
+        noteInput.value = currentObservations.nota;
+        updateButtonStates();
 
-		// Cargar estado de titular
-		const resStarter = await fetch(`<?= htmlspecialchars(url('get_starter_status.php')) ?>?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(currentDorsal)}`);
-		const starterData = await resStarter.json();
-		currentIsStarter = starterData.is_starter || false;
-		updateStarterButton();
-	  } catch (e) {
-		currentObservations = { 
-		  mano: null, 
-		  interior: null,
-		  ataque: [], 
-		  defensa: [], 
-		  rebote: [], 
-		  habilidad: [], 
-		  nota: '' 
-		};
-		noteInput.value = '';
-		currentIsStarter = false;
-		updateButtonStates();
-		updateStarterButton();
-	  }
-	}
-		// --- Estado visual de botones ---
+        // Cargar titular
+        const resStarter = await fetch(`<?= htmlspecialchars(url('get_starter_status.php')) ?>?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(currentDorsal)}`);
+        const starterData = await resStarter.json();
+        currentIsStarter = starterData.is_starter || false;
+        updateStarterButton();
+      } catch (e) {
+        currentObservations = { 
+          mano: null, 
+          interior: null,
+          ataque: [], 
+          defensa: [], 
+          rebote: [], 
+          habilidad: [], 
+          nota: '' 
+        };
+        noteInput.value = '';
+        currentIsStarter = false;
+        updateButtonStates();
+        updateStarterButton();
+      }
+    }
+
+    // --- Estado visual de botones ---
     function updateButtonStates() {
       document.querySelectorAll('.note-btn').forEach(btn => {
         const cat = btn.dataset.category;
@@ -614,6 +693,57 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       });
     }
 
+    // --- Botón de titular ---
+    function updateStarterButton() {
+      const btn = document.getElementById('toggle-starter-btn');
+      if (!btn) return;
+      if (currentIsStarter) {
+        btn.textContent = '✅ Es titular';
+        btn.style.background = '#10b981';
+      } else {
+        btn.textContent = '👕 Marcar como titular';
+        btn.style.background = '#6b7280';
+      }
+    }
+
+    document.getElementById('toggle-starter-btn')?.addEventListener('click', async () => {
+      if (!currentDorsal) {
+        alert('Selecciona un jugador primero.');
+        return;
+      }
+      const newStatus = !currentIsStarter;
+      const obs = {
+        match_id: matchId,
+        team: currentTeam,
+        dorsal: currentDorsal,
+        is_starter: newStatus,
+        csrf_token: '<?= csrf_token() ?>'
+      };
+
+      if (navigator.onLine) {
+        try {
+          await fetch('<?= htmlspecialchars(url('toggle_starter.php')) ?>', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(obs)
+          });
+          currentIsStarter = newStatus;
+          updateStarterButton();
+          log.innerHTML = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → ${newStatus ? 'Marcado como titular' : 'Quitado de titulares'}<br>` + log.innerHTML;
+        } catch (e) {
+          log.innerHTML = '⚠️ Error al actualizar titular<br>' + log.innerHTML;
+        }
+      } else {
+        // Guardar offline
+        const pending = getPendingObservations();
+        pending.push({ type: 'starter', ...obs });
+        savePendingObservations(pending);
+        currentIsStarter = newStatus;
+        updateStarterButton();
+        log.innerHTML = '💾 Titular guardado offline<br>' + log.innerHTML;
+      }
+    });
+
     // --- Manejo de clics en botones ---
     document.querySelectorAll('.note-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -625,26 +755,69 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
         const value = btn.dataset.value;
         let logText = '';
 
+        const obsData = {
+          match_id: matchId,
+          team: currentTeam,
+          dorsal: currentDorsal,
+          category: category,
+          value: value,
+          csrf_token: '<?= csrf_token() ?>'
+        };
+
         if (category === 'mano' || category === 'interior') {
           const oldValue = currentObservations[category];
           currentObservations[category] = value;
           logText = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → ${category}: ${btn.textContent.replace('✔', '').trim()}`;
-          await saveObservation(category, value, logText);
-          if (oldValue !== null && oldValue !== value) {
-            await deleteObservation(category, oldValue, '');
+          
+          if (navigator.onLine) {
+            await saveObservationToServer(obsData, logText);
+            if (oldValue !== null && oldValue !== value) {
+              await deleteObservationToServer({
+                match_id: matchId,
+                team: currentTeam,
+                dorsal: currentDorsal,
+                category: category,
+                value: oldValue,
+                csrf_token: '<?= csrf_token() ?>'
+              }, '');
+            }
+          } else {
+            // Guardar offline
+            const pending = getPendingObservations();
+            pending.push({ type: 'save', ...obsData });
+            if (oldValue !== null && oldValue !== value) {
+              pending.push({ type: 'delete', match_id: matchId, team: currentTeam, dorsal: currentDorsal, category: category, value: oldValue, csrf_token: '<?= csrf_token() ?>' });
+            }
+            savePendingObservations(pending);
+            log.innerHTML = '💾 Guardado offline (se enviará al recuperar conexión)<br>' + log.innerHTML;
           }
         } else if (['ataque','defensa','rebote','habilidad'].includes(category)) {
           const idx = currentObservations[category].indexOf(value);
           if (idx === -1) {
             currentObservations[category].push(value);
             logText = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → + ${btn.textContent.replace('✔', '').trim()}`;
-            await saveObservation(category, value, logText);
+            if (navigator.onLine) {
+              await saveObservationToServer(obsData, logText);
+            } else {
+              const pending = getPendingObservations();
+              pending.push({ type: 'save', ...obsData });
+              savePendingObservations(pending);
+              log.innerHTML = '💾 Guardado offline<br>' + log.innerHTML;
+            }
           } else {
             currentObservations[category].splice(idx, 1);
             logText = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → – ${btn.textContent.replace('✔', '').trim()}`;
-            await deleteObservation(category, value, logText);
+            if (navigator.onLine) {
+              await deleteObservationToServer(obsData, logText);
+            } else {
+              const pending = getPendingObservations();
+              pending.push({ type: 'delete', ...obsData });
+              savePendingObservations(pending);
+              log.innerHTML = '💾 Eliminado offline<br>' + log.innerHTML;
+            }
           }
         }
+
         updateButtonStates();
       });
     });
@@ -654,101 +827,66 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       const note = noteInput.value.trim();
       if (!note) return;
       currentObservations.nota = note;
-      const logText = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → Nota guardada`;
-      await saveObservation('nota', note, logText);
+      const obsData = {
+        match_id: matchId,
+        team: currentTeam,
+        dorsal: currentDorsal,
+        category: 'nota',
+        value: note,
+        csrf_token: '<?= csrf_token() ?>'
+      };
+
+      if (navigator.onLine) {
+        await saveObservationToServer(obsData, 'Nota guardada');
+      } else {
+        const pending = getPendingObservations();
+        pending.push({ type: 'save', ...obsData });
+        savePendingObservations(pending);
+        log.innerHTML = '💾 Nota guardada offline<br>' + log.innerHTML;
+      }
     });
 
     // --- Funciones de red ---
-    async function saveObservation(category, value, logText) {
+    async function saveObservationToServer(data, logText) {
       log.innerHTML = logText + '<br>' + log.innerHTML;
       try {
         await fetch('<?= htmlspecialchars(url('save_observation.php')) ?>', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            match_id: matchId,
-            team: currentTeam,
-            dorsal: currentDorsal,
-            category: category,
-            value: value,
-            csrf_token: '<?= csrf_token() ?>'
-          })
+          body: JSON.stringify(data)
         });
       } catch (e) {
         log.innerHTML = '⚠️ Error de red<br>' + log.innerHTML;
+        // Guardar offline si falla
+        const pending = getPendingObservations();
+        pending.push({ type: 'save', ...data });
+        savePendingObservations(pending);
       }
     }
 
-    async function deleteObservation(category, value, logText) {
+    async function deleteObservationToServer(data, logText) {
       if (logText) log.innerHTML = logText + '<br>' + log.innerHTML;
       try {
         await fetch('<?= htmlspecialchars(url('delete_observation.php')) ?>', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            match_id: matchId,
-            team: currentTeam,
-            dorsal: currentDorsal,
-            category: category,
-            value: value,
-            csrf_token: '<?= csrf_token() ?>'
-          })
+          body: JSON.stringify(data)
         });
       } catch (e) {
         log.innerHTML = '⚠️ Error al eliminar<br>' + log.innerHTML;
+        const pending = getPendingObservations();
+        pending.push({ type: 'delete', ...data });
+        savePendingObservations(pending);
       }
     }
 
     // --- Inicio ---
     renderDorsalButtons('home');
-    
-    // Cargar observaciones al seleccionar jugador
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('dorsal-btn')) {
-        loadObservations();
-      }
-    });
-	
-	function updateStarterButton() {
-  const btn = document.getElementById('toggle-starter-btn');
-  if (!btn) return;
-  if (currentIsStarter) {
-    btn.textContent = '✅ Es titular';
-    btn.style.background = '#10b981';
-  } else {
-    btn.textContent = '👕 Marcar como titular';
-    btn.style.background = '#6b7280';
-  }
-}
 
-document.getElementById('toggle-starter-btn')?.addEventListener('click', async () => {
-  if (!currentDorsal) {
-    alert('Selecciona un jugador primero.');
-    return;
-  }
-  const newStatus = !currentIsStarter;
-  try {
-    await fetch('<?= htmlspecialchars(url('toggle_starter.php')) ?>', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        match_id: matchId,
-        team: currentTeam,
-        dorsal: currentDorsal,
-        is_starter: newStatus,
-        csrf_token: '<?= csrf_token() ?>'
-      })
-    });
-    currentIsStarter = newStatus;
-    updateStarterButton();
-    log.innerHTML = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → ${newStatus ? 'Marcado como titular' : 'Quitado de titulares'}<br>` + log.innerHTML;
-  } catch (e) {
-    log.innerHTML = '⚠️ Error al actualizar titular<br>' + log.innerHTML;
-  }
-});
-
-
-	
+    // Sincronizar al cargar
+    if (navigator.onLine) {
+      syncPendingObservations();
+    }
   </script>
 </body>
 </html>
