@@ -1,5 +1,5 @@
 <?php
-// public/scouting.php — Scouting cualitativo final con ✔️, toggle y gestión de jugadores
+// public/scouting.php — Scouting cualitativo final y corregido
 require_once __DIR__ . '/../src/bootstrap.php';
 require_once __DIR__ . '/../src/db.php';
 require_login();
@@ -47,6 +47,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Scouting Cualitativo</title>
+  <link rel="stylesheet" href="<?= htmlspecialchars(url_asset('css/styles.css')) ?>">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
@@ -168,37 +169,36 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
     }
-	.note-btn {
-	  padding: 24px 20px;
-	  font-size: 30px;          /* ↑ más grande */
-	  line-height: 1.3;
-	  border: 2px solid #555;
-	  border-radius: 14px;
-	  color: white;
-	  background: #333;
-	  cursor: pointer;
-	  text-align: left;
-	  position: relative;
-	  min-height: 90px;         /* asegura altura mínima incluso con texto corto */
-	  display: flex;
-	  flex-direction: column;
-	  justify-content: center;
-	}
+    .note-btn {
+      padding: 24px 20px;
+      font-size: 30px;
+      line-height: 1.3;
+      border: 2px solid #555;
+      border-radius: 14px;
+      color: white;
+      background: #333;
+      cursor: pointer;
+      text-align: left;
+      position: relative;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     .note-btn.active {
       border-color: #fff;
       background: #444;
     }
- 
-	.note-btn .check {
-	  display: none;
-	  position: absolute;
-	  top: 12px;
-	  right: 14px;
-	  font-size: 28px;          /* ↑ más grande */
-	  color: #4ade80;
-	  font-weight: bold;
-	}
-	 .note-btn.active .check { display: block; }
+    .note-btn .check {
+      display: none;
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      font-size: 28px;
+      color: #4ade80;
+      font-weight: bold;
+    }
+    .note-btn.active .check { display: block; }
 
     #free-note-input {
       width: 100%;
@@ -226,23 +226,39 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       position: fixed;
       top: 12px;
       left: 12px;
-      background: #2563eb;
+      background: #f59e0b;
       color: white;
       text-decoration: none;
       padding: 8px 14px;
       border-radius: 12px;
       font-weight: bold;
-      font-size: 26px;
+      font-size: 18px;
       z-index: 100;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
     .back-to-app-btn:hover {
       background: #1d4ed8;
     }
+    
+    .team-notes-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      background: #f59e0b;
+      color: white;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 16px;
+      z-index: 100;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body>
 <a href="<?= htmlspecialchars(url('matches.php')) ?>" class="back-to-app-btn">⬅️ Partidos</a>
+<a href="<?= htmlspecialchars(url('match_notes.php?match_id=' . $match_id)) ?>" class="team-notes-btn">📝 Equipo</a>
 
   <div class="team-selector">
     <button class="team-btn active" data-team="home"><?= $home_name ?></button>
@@ -251,12 +267,17 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
 
   <div class="dorsal-buttons" id="dorsal-buttons"></div>
 
-  <!-- Área para añadir/eliminar jugadores -->
   <div class="dorsal-input-area">
     <input type="text" id="dorsal-new" class="dorsal-input" placeholder="Nº nuevo (ej. 25)" inputmode="numeric" autocomplete="off">
     <button id="add-player-btn" class="add-player-btn">➕ Añadir jugador</button>
     <button id="delete-player-btn" class="delete-player-btn">🗑️ Eliminar jugador</button>
   </div>
+	<!-- Botón para marcar como titular -->
+	<div style="text-align: center; margin: 20px 0;">
+	  <button id="toggle-starter-btn" style="padding: 14px 24px; font-size: 22px; font-weight: bold; border: none; border-radius: 12px; background: #6b7280; color: white; cursor: pointer;">
+		👕 Marcar como titular
+	  </button>
+	</div>
 
   <div class="accordion active" data-category="mano">
     <div class="accordion-header">
@@ -266,8 +287,23 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     <div class="accordion-content">
       <div class="note-buttons">
         <button class="note-btn" data-category="mano" data-value="zurdo">👁️ Zurdo<span class="check">✔</span></button>
-        <button class="note-btn" data-category="mano" data-value="diestro">🖐️ Derecho<span class="check">✔</span></button>
-        <button class="note-btn" data-category="mano" data-value="ambidiestro">⚖️ Ambidiestro<span class="check">✔</span></button>
+        <button class="note-btn" data-category="mano" data-value="diestro">🖐️ Diestro<span class="check">✔</span></button>
+        <button class="note-btn" data-category="mano" data-value="ambidiestro">🤲 Ambidiestro<span class="check">✔</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion" data-category="habilidad">
+    <div class="accordion-header">
+      <span>🧩 Habilidades</span>
+      <span>▼</span>
+    </div>
+    <div class="accordion-content">
+      <div class="note-buttons">
+        <button class="note-btn" data-category="habilidad" data-value="no_bota">🤝 No bota<span class="check">✔</span></button>
+        <button class="note-btn" data-category="habilidad" data-value="juega_sin">🚶‍♂️ Juega sin balón<span class="check">✔</span></button>
+        <button class="note-btn" data-category="habilidad" data-value="bloquea">🧍‍♂️ Bloquea<span class="check">✔</span></button>
+        <button class="note-btn" data-category="habilidad" data-value="finta">🏃‍♂️ Finta tiro<span class="check">✔</span></button>
       </div>
     </div>
   </div>
@@ -279,10 +315,25 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     </div>
     <div class="accordion-content">
       <div class="note-buttons">
-        <button class="note-btn" data-category="ataque" data-value="tira_bien">🎯 Tira bien<span class="check">✔</span></button>
+        <button class="note-btn" data-category="ataque" data-value="bienTL">🏀 Bien TL<span class="check">✔</span></button>
+        <button class="note-btn" data-category="ataque" data-value="tira_bien2">🎯 Tira de 2<span class="check">✔</span></button>
+        <button class="note-btn" data-category="ataque" data-value="tira_bien3">🏀 Tira de 3<span class="check">✔</span></button>
         <button class="note-btn" data-category="ataque" data-value="penetra">🏀 Penetra bien<span class="check">✔</span></button>
         <button class="note-btn" data-category="ataque" data-value="corre_ca">🏃‍♂️ Corre CA<span class="check">✔</span></button>
         <button class="note-btn" data-category="ataque" data-value="pasa_bien">🤲 Pasa bien<span class="check">✔</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion" data-category="interior">
+    <div class="accordion-header">
+      <span>🧑‍🤝‍🧑 Juego interior</span>
+      <span>▼</span>
+    </div>
+    <div class="accordion-content">
+      <div class="note-buttons">
+        <button class="note-btn" data-category="interior" data-value="buenos_mov">🧱 Buenos mov. abajo<span class="check">✔</span></button>
+        <button class="note-btn" data-category="interior" data-value="no_juega">⛔ No juega abajo<span class="check">✔</span></button>
       </div>
     </div>
   </div>
@@ -294,10 +345,23 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     </div>
     <div class="accordion-content">
       <div class="note-buttons">
-        <button class="note-btn" data-category="defensa" data-value="agresiva">🛡️ Agresiva<span class="check">✔</span></button>
+        <button class="note-btn" data-category="defensa" data-value="agresiva">🛡️ Defensa agresiva<span class="check">✔</span></button>
         <button class="note-btn" data-category="defensa" data-value="ayudas">🤝 Hace ayudas<span class="check">✔</span></button>
-        <button class="note-btn" data-category="defensa" data-value="flojo">🕳️ Flojo<span class="check">✔</span></button>
-        <button class="note-btn" data-category="defensa" data-value="muchas_faltas">⚠️ Muchas faltas<span class="check">✔</span></button>
+        <button class="note-btn" data-category="defensa" data-value="flojo">🕳️ Flojo en defensa<span class="check">✔</span></button>
+        <button class="note-btn" data-category="defensa" data-value="muchas_faltas">⚠️ Comete muchas faltas<span class="check">✔</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion" data-category="rebote">
+    <div class="accordion-header">
+      <span>🏀 Rebote</span>
+      <span>▼</span>
+    </div>
+    <div class="accordion-content">
+      <div class="note-buttons">
+        <button class="note-btn" data-category="rebote" data-value="ofensivo">🏀 Rebote ofensivo<span class="check">✔</span></button>
+        <button class="note-btn" data-category="rebote" data-value="defensivo">🛡️ Rebote defensivo<span class="check">✔</span></button>
       </div>
     </div>
   </div>
@@ -309,9 +373,10 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     </div>
     <div class="accordion-content">
       <textarea id="free-note-input" placeholder="Escribe tu observación..."></textarea>
-      <button id="save-note-btn" style="width:100%; padding:14px; font-size:28px; margin-top:12px; background:#10b981; color:white; border:none; border-radius:12px;">✅ Guardar nota</button>
+      <button id="save-note-btn" style="width:100%; padding:14px; font-size:18px; margin-top:12px; background:#10b981; color:white; border:none; border-radius:12px;">✅ Guardar nota</button>
     </div>
   </div>
+
 
   <div class="log" id="event-log">Tus observaciones aparecerán aquí...</div>
 
@@ -323,10 +388,18 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     const awayDorsales = <?= json_encode($away_dorsales) ?>;
     const homeName = <?= json_encode($home_name) ?>;
     const awayName = <?= json_encode($away_name) ?>;
-
+	let currentIsStarter = false;
     let currentTeam = 'home';
     let currentDorsal = '';
-    let currentObservations = { mano: null, ataque: [], defensa: [], nota: '' };
+    let currentObservations = { 
+      mano: null, 
+      interior: null,
+      ataque: [], 
+      defensa: [], 
+      rebote: [], 
+      habilidad: [], 
+      nota: '' 
+    };
 
     const log = document.getElementById('event-log');
     const dorsalButtons = document.getElementById('dorsal-buttons');
@@ -371,7 +444,15 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
         renderDorsalButtons(currentTeam);
         currentDorsal = '';
         document.querySelectorAll('.dorsal-btn').forEach(b => b.classList.remove('active'));
-        currentObservations = { mano: null, ataque: [], defensa: [], nota: '' };
+        currentObservations = { 
+          mano: null, 
+          interior: null,
+          ataque: [], 
+          defensa: [], 
+          rebote: [], 
+          habilidad: [], 
+          nota: '' 
+        };
         noteInput.value = '';
       });
     });
@@ -441,7 +522,6 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
         });
         const data = await res.json();
         if (data.success) {
-          // Eliminar del array local
           if (currentTeam === 'home') {
             const idx = homeDorsales.indexOf(currentDorsal);
             if (idx !== -1) homeDorsales.splice(idx, 1);
@@ -461,44 +541,68 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       }
     });
 
-    // --- Seleccionar jugador y cargar observaciones ---
-    async function loadObservations() {
-      if (!currentDorsal) return;
-      try {
-        const res = await fetch(`<?= htmlspecialchars(url('get_observations.php')) ?>?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(currentDorsal)}`);
-        const obs = await res.json();
-        currentObservations = { mano: null, ataque: [], defensa: [], nota: '' };
-        obs.forEach(o => {
-          if (o.category === 'nota') {
-            currentObservations.nota = o.value;
-          } else if (o.category === 'mano') {
-            currentObservations.mano = o.value;
-          } else if (o.category === 'ataque' || o.category === 'defensa') {
-            if (!Array.isArray(currentObservations[o.category])) {
-              currentObservations[o.category] = [];
-            }
-            currentObservations[o.category].push(o.value);
-          }
-        });
-        noteInput.value = currentObservations.nota;
-        updateButtonStates();
-      } catch (e) {
-        currentObservations = { mano: null, ataque: [], defensa: [], nota: '' };
-        noteInput.value = '';
-        updateButtonStates();
-      }
-    }
+//Carga Observaciones
+	 async function loadObservations() {
+	  if (!currentDorsal) return;
+	  try {
+		// Cargar observaciones cualitativas
+		const resObs = await fetch(`<?= htmlspecialchars(url('get_observations.php')) ?>?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(currentDorsal)}`);
+		const obs = await resObs.json();
+		currentObservations = { 
+		  mano: null, 
+		  interior: null,
+		  ataque: [], 
+		  defensa: [], 
+		  rebote: [], 
+		  habilidad: [], 
+		  nota: '' 
+		};
+		obs.forEach(o => {
+		  if (o.category === 'nota') {
+			currentObservations.nota = o.value;
+		  } else if (o.category === 'mano' || o.category === 'interior') {
+			currentObservations[o.category] = o.value;
+		  } else if (['ataque','defensa','rebote','habilidad'].includes(o.category)) {
+			if (!Array.isArray(currentObservations[o.category])) {
+			  currentObservations[o.category] = [];
+			}
+			currentObservations[o.category].push(o.value);
+		  }
+		});
+		noteInput.value = currentObservations.nota;
+		updateButtonStates();
 
-    // --- Actualizar estado visual de botones ---
+		// Cargar estado de titular
+		const resStarter = await fetch(`<?= htmlspecialchars(url('get_starter_status.php')) ?>?match_id=${matchId}&team=${currentTeam}&dorsal=${encodeURIComponent(currentDorsal)}`);
+		const starterData = await resStarter.json();
+		currentIsStarter = starterData.is_starter || false;
+		updateStarterButton();
+	  } catch (e) {
+		currentObservations = { 
+		  mano: null, 
+		  interior: null,
+		  ataque: [], 
+		  defensa: [], 
+		  rebote: [], 
+		  habilidad: [], 
+		  nota: '' 
+		};
+		noteInput.value = '';
+		currentIsStarter = false;
+		updateButtonStates();
+		updateStarterButton();
+	  }
+	}
+		// --- Estado visual de botones ---
     function updateButtonStates() {
       document.querySelectorAll('.note-btn').forEach(btn => {
         const cat = btn.dataset.category;
         const val = btn.dataset.value;
         let isActive = false;
 
-        if (cat === 'mano') {
-          isActive = (currentObservations.mano === val);
-        } else if (cat === 'ataque' || cat === 'defensa') {
+        if (cat === 'mano' || cat === 'interior') {
+          isActive = (currentObservations[cat] === val);
+        } else if (['ataque','defensa','rebote','habilidad'].includes(cat)) {
           isActive = Array.isArray(currentObservations[cat]) && currentObservations[cat].includes(val);
         }
 
@@ -510,7 +614,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
       });
     }
 
-    // --- Manejo de clics en botones de observación ---
+    // --- Manejo de clics en botones ---
     document.querySelectorAll('.note-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!currentDorsal) {
@@ -521,11 +625,15 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
         const value = btn.dataset.value;
         let logText = '';
 
-        if (category === 'mano') {
-          currentObservations.mano = value;
-          logText = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → Mano: ${btn.textContent.replace('✔', '').trim()}`;
+        if (category === 'mano' || category === 'interior') {
+          const oldValue = currentObservations[category];
+          currentObservations[category] = value;
+          logText = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → ${category}: ${btn.textContent.replace('✔', '').trim()}`;
           await saveObservation(category, value, logText);
-        } else if (category === 'ataque' || category === 'defensa') {
+          if (oldValue !== null && oldValue !== value) {
+            await deleteObservation(category, oldValue, '');
+          }
+        } else if (['ataque','defensa','rebote','habilidad'].includes(category)) {
           const idx = currentObservations[category].indexOf(value);
           if (idx === -1) {
             currentObservations[category].push(value);
@@ -537,7 +645,6 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
             await deleteObservation(category, value, logText);
           }
         }
-
         updateButtonStates();
       });
     });
@@ -573,7 +680,7 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     }
 
     async function deleteObservation(category, value, logText) {
-      log.innerHTML = logText + '<br>' + log.innerHTML;
+      if (logText) log.innerHTML = logText + '<br>' + log.innerHTML;
       try {
         await fetch('<?= htmlspecialchars(url('delete_observation.php')) ?>', {
           method: 'POST',
@@ -595,12 +702,53 @@ $away_name = htmlspecialchars($match['away_name'] ?: 'Visitante');
     // --- Inicio ---
     renderDorsalButtons('home');
     
-    // Cargar observaciones cuando se selecciona un jugador
+    // Cargar observaciones al seleccionar jugador
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('dorsal-btn')) {
         loadObservations();
       }
     });
+	
+	function updateStarterButton() {
+  const btn = document.getElementById('toggle-starter-btn');
+  if (!btn) return;
+  if (currentIsStarter) {
+    btn.textContent = '✅ Es titular';
+    btn.style.background = '#10b981';
+  } else {
+    btn.textContent = '👕 Marcar como titular';
+    btn.style.background = '#6b7280';
+  }
+}
+
+document.getElementById('toggle-starter-btn')?.addEventListener('click', async () => {
+  if (!currentDorsal) {
+    alert('Selecciona un jugador primero.');
+    return;
+  }
+  const newStatus = !currentIsStarter;
+  try {
+    await fetch('<?= htmlspecialchars(url('toggle_starter.php')) ?>', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        match_id: matchId,
+        team: currentTeam,
+        dorsal: currentDorsal,
+        is_starter: newStatus,
+        csrf_token: '<?= csrf_token() ?>'
+      })
+    });
+    currentIsStarter = newStatus;
+    updateStarterButton();
+    log.innerHTML = `[${currentTeam === 'home' ? homeName : awayName}] ${currentDorsal} → ${newStatus ? 'Marcado como titular' : 'Quitado de titulares'}<br>` + log.innerHTML;
+  } catch (e) {
+    log.innerHTML = '⚠️ Error al actualizar titular<br>' + log.innerHTML;
+  }
+});
+
+
+	
   </script>
 </body>
 </html>

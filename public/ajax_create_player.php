@@ -24,6 +24,28 @@ $number = trim($_POST['number'] ?? '');
 $name = trim($_POST['name'] ?? '');
 $match_id = filter_var($_POST['match_id'] ?? null, FILTER_VALIDATE_INT);
 
+
+
+// Verificar si ya existe un jugador con ese dorsal en el partido y equipo
+$stmt = $pdo->prepare("
+    SELECT 1
+    FROM match_players mp
+    JOIN players p ON mp.player_id = p.id
+    WHERE mp.match_id = ? AND mp.team_id = ? AND p.number = ?
+    LIMIT 1
+");
+$stmt->execute([$match_id, $team_id, $number]);
+if ($stmt->fetch()) {
+    echo json_encode(['success' => false, 'error' => 'Ya existe un jugador con ese dorsal en este equipo.']);
+    exit;
+}
+
+
+
+
+
+
+
 if (!$team_id || !$number) {
     echo json_encode(['success' => false, 'error' => 'Faltan datos: equipo y número son obligatorios']);
     exit;
